@@ -1,7 +1,6 @@
-"""
-An RPN Calculator
-"""
-from __future__ import print_function
+# """
+# An RPN Calculator
+# """
 
 import sublime
 import sublime_plugin
@@ -26,14 +25,54 @@ class InsufficientStackDepth(Exception):
     def __init__(self, required):
         self.required = required
 
+
 ########################################################################################
 class RpnCommand(sublime_plugin.WindowCommand):
-    """
-    Stuff goes here
-    """
+    "Launches the rpn view"
 
-    def __init__(self, *args, **kwargs):
-        super(RpnCommand, self).__init__(*args, **kwargs)
+    #--------------------------------------------
+    def run(self, *args, **kwargs):
+        print("Here with {}".format(kwargs))
+        try:
+            if kwargs['quit']:
+                self.quit()
+                return
+        except KeyError:
+            pass
+
+        self.opanel = None
+        for aview in self.window.views():
+            if aview.name() == RPN_WINDOW_NAME:
+                self.opanel = aview
+                break
+
+        if self.opanel is None:
+            self.opanel = self.window.new_file()
+            self.opanel.set_name(RPN_WINDOW_NAME)
+            self.opanel.set_scratch(True)
+
+        self.window.focus_view(self.opanel)
+
+    #--------------------------------------------
+    def quit(self):
+        if RPN_WINDOW_NAME in [it.name() for it in self.window.views()]:
+            self.window.focus_view(self.opanel)
+            self.window.run_command("close_file")
+
+        # close the input panel
+        self.window.run_command("hide_panel", {"cancel": True})
+
+        # clear these things out
+        self.opanel = None
+        self.stack = []
+        self.done = True
+
+########################################################################################
+class RPNEvent(sublime_plugin.EventListener):
+    "Handles all the work for RPN"
+
+    def __init__(self):
+        super(RPNEvent, self).__init__()
 
         self.opanel = None
         self.done = False
@@ -77,80 +116,65 @@ class RpnCommand(sublime_plugin.WindowCommand):
         self.base = DEC
         self.mode, self.prev_mode = PROGRAMMER, PROGRAMMER
         self.help_str = self.gen_help_str()
+        self.that_was_me = False
+        self.edit_region_start = 0
 
     #--------------------------------------------
-    def run(self):
-        for aview in self.window.views():
-            if aview.name() == RPN_WINDOW_NAME:
-                self.opanel = aview
-                self.window.focus_view(self.opanel)
-                break
-
-        if self.opanel is None:
-            self.opanel = self.window.new_file()
-            self.opanel.set_name(RPN_WINDOW_NAME)
-            self.opanel.set_read_only(True)
-            self.opanel.settings().set('last_point', 0)
-            self.opanel.set_scratch(True)
-
-        self.window.focus_view(self.opanel)
-        self.ipanel = self.window.show_input_panel("%5d> " % len(self.stack), "", self.on_done, self.on_change, self.on_cancel)
-        self.ipanel_id = self.ipanel.id()
-        self.update_rpn()
+    def on_activated_async(self, view):
+        if(not self.that_was_me and view.name() == RPN_WINDOW_NAME):
+            self.update_rpn(view)
+            self.that_was_me = False
 
     #--------------------------------------------
-    def update_rpn(self):
+    def on_close(self, view):
+        if(view.name() == RPN_WINDOW_NAME):
+            print("Eeek, I'm dead")
+
+    #--------------------------------------------
+    def on_modified(self, view):
+        if(view.name() == RPN_WINDOW_NAME):
+            if self.that_was_me:
+                self.that_was_me = False
+                self.edit_region_start = view.size()
+
+            else:
+                if view.size() < self.edit_region_start:
+                    self.update_rpn(view)
+                    return
+
+                current_region = sublime.Region(self.edit_region_start, view.size())
+                text = view.substr(current_region)
+
+                # catch what happens when the input panel is cleared
+                # on any character, if help_str is populated, then
+                # remove the help and erase the panel
+                if self.mode == HELP:
+                    self.mode = self.prev_mode
+                    self.update_rpn(view)
+                    return
+                elif self.mode == CHANGE_MODE:
+                    mode_cmd = self.mode_commands[text]
+                    mode_cmd()
+                    self.update_rpn(view)
+                    return
+
+                # if a command key is entered, then run the command and clear the input panel
+                if text[-1] in self.commands.keys():
+                    self.run_command(text[-1])
+                    self.update_rpn(view)
+
+                elif text[-1] == '\n':
+                    text_args = self.convert_text_to_args(text)
+                    self.process(text_args)
+                    # send the new stack and status to the RPN window
+                    self.update_rpn(view)
+
+    #--------------------------------------------
+    def update_rpn(self, view):
         "Runs the print_to_rpn command"
-        
-        self.opanel.run_command("print_to_rpn", args={'stack': self.stack, 'mode': self.mode, 'help_str': self.help_str, 'base': self.base})
 
-    #--------------------------------------------
-    def on_done(self, text):
-        "Called when enter is pressed on the input panel"
-
-        text_args = self.convert_text_to_args(text)
-
-        self.process(text_args)
-
-        # send the new stack and status to the RPN window
-        self.update_rpn()
-
-        # go fetch another command
-        self.run()
-
-    #--------------------------------------------
-    def on_change(self, text):
-        "Called when any key is pressed on the input panel"
-
-        # catch what happens when the input panel is cleared
-        if text == '':
-            return
-
-        # on any character, if help_str is populated, then
-        # remove the help and erase the panel
-        if self.mode == HELP:
-            self.mode = self.prev_mode
-            self.update_rpn()
-            self.erase_input_panel()
-            return
-        elif self.mode == CHANGE_MODE:
-            mode_cmd = self.mode_commands[text]
-            mode_cmd()
-            self.update_rpn()
-            self.erase_input_panel()
-            return
-
-        # if a command key is entered, then run the command and clear the input panel
-        if text[0] in self.commands.keys():
-            self.run_command(text[0])
-            self.update_rpn()
-            self.erase_input_panel()
-
-    #--------------------------------------------
-    def on_cancel(self):
-        "Called when 'ESC' is pressed in the input panel"
-
-        self.quit()
+        self.that_was_me = True
+        view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'help_str': self.help_str, 'base': self.base})
 
     #--------------------------------------------
     def gen_help_str(self):
@@ -163,10 +187,6 @@ class RpnCommand(sublime_plugin.WindowCommand):
             h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
         h_txt += "\n{:^30}".format("Any key to exit.")
         return h_txt
-
-    #--------------------------------------------
-    def erase_input_panel(self):
-        self.ipanel.run_command("erase_input_panel")
 
     #--------------------------------------------
     def convert_text_to_args(self, text):
@@ -190,6 +210,12 @@ class RpnCommand(sublime_plugin.WindowCommand):
                 self.stack.append(last_val)
             except ValueError:
                 self.run_command(arg)
+                print("Here with arg {}".format(arg))
+
+    #--------------------------------------------
+    def erase_line(self):
+        "Erase the current input line"
+        pass
 
     #--------------------------------------------
     def run_command(self, key):
@@ -209,7 +235,7 @@ class RpnCommand(sublime_plugin.WindowCommand):
             sublime.error_message("Programmer Error, count={}".format(count))
 
         if len(self.stack) < count:
-            self.erase_input_panel()
+            self.erase_line()
             raise InsufficientStackDepth(count)
 
         vals = []
@@ -386,18 +412,7 @@ class RpnCommand(sublime_plugin.WindowCommand):
     def quit(self):
         "Quit out of RPN"
 
-        if RPN_WINDOW_NAME in [it.name() for it in self.window.views()]:
-            self.window.focus_view(self.opanel)
-            self.window.run_command("close_file")
-
-        # close the input panel
-        self.window.run_command("hide_panel", {"cancel": True})
-
-        # clear these things out
-        self.ipanel = None
-        self.opanel = None
-        self.stack = []
-        self.done = True
+        sublime.run_command('rpn_command', {'quit': True})
 
 
 ########################################################################################
@@ -411,12 +426,14 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         self.mode = kwargs['mode']
         self.help_str = kwargs['help_str']
         self.base = kwargs['base']
-        self.view.set_read_only(False)
+        print("Here with {}".format(stack))
+
+        # self.view.set_read_only(False)
         # whole_region = sublime.Region(0, self.view.size())
         self.erase_buffer(edit)
         rpn_txt = self.get_rpn_txt(stack)
         self.view.insert(edit, 0, rpn_txt)
-        self.view.set_read_only(True)
+        # self.view.set_read_only(True)
 
     #--------------------------------------------
     def erase_buffer(self, edit):
@@ -435,8 +452,9 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
             if stack:
                 for idx, val in enumerate(stack):
                     str += "{}> {}\n".format(idx, self.print_val(val))
-            else:
-                str += "0> "
+
+            str += "{}> ".format(len(stack))
+
         return str
 
     #--------------------------------------------
@@ -477,8 +495,37 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
         return bar_str
 
-########################################################################################
-class EraseInputPanelCommand(sublime_plugin.TextCommand):
-    def run(self, edit, **kwargs):
-        curr_region = sublime.Region(0, 1)
-        self.view.erase(edit, curr_region)
+#     #--------------------------------------------
+#     def run(self):
+#         for aview in self.window.views():
+#             if aview.name() == RPN_WINDOW_NAME:
+#                 self.opanel = aview
+#                 self.window.focus_view(self.opanel)
+#                 break
+
+#         if self.opanel is None:
+#             self.opanel = self.window.new_file()
+#             self.opanel.set_name(RPN_WINDOW_NAME)
+#             self.opanel.set_read_only(True)
+#             self.opanel.settings().set('last_point', 0)
+#             self.opanel.set_scratch(True)
+
+#         self.window.focus_view(self.opanel)
+#         self.ipanel = self.window.show_input_panel("%5d> " % len(self.stack), "", self.on_done, self.on_change, self.on_cancel)
+#         self.ipanel_id = self.ipanel.id()
+#         self.update_rpn()
+
+#     #--------------------------------------------
+#     def on_done(self, text):
+#         "Called when enter is pressed on the input panel"
+
+#         text_args = self.convert_text_to_args(text)
+
+#         self.process(text_args)
+
+#         # send the new stack and status to the RPN window
+#         self.update_rpn()
+
+#         # go fetch another command
+#         self.run()
+
