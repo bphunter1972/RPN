@@ -31,15 +31,7 @@ class RpnCommand(sublime_plugin.WindowCommand):
     "Launches the rpn view"
 
     #--------------------------------------------
-    def run(self, *args, **kwargs):
-        print("Here with {}".format(kwargs))
-        try:
-            if kwargs['quit']:
-                self.quit()
-                return
-        except KeyError:
-            pass
-
+    def run(self):
         self.opanel = None
         for aview in self.window.views():
             if aview.name() == RPN_WINDOW_NAME:
@@ -52,20 +44,6 @@ class RpnCommand(sublime_plugin.WindowCommand):
             self.opanel.set_scratch(True)
 
         self.window.focus_view(self.opanel)
-
-    #--------------------------------------------
-    def quit(self):
-        if RPN_WINDOW_NAME in [it.name() for it in self.window.views()]:
-            self.window.focus_view(self.opanel)
-            self.window.run_command("close_file")
-
-        # close the input panel
-        self.window.run_command("hide_panel", {"cancel": True})
-
-        # clear these things out
-        self.opanel = None
-        self.stack = []
-        self.done = True
 
 ########################################################################################
 class RPNEvent(sublime_plugin.EventListener):
@@ -98,7 +76,6 @@ class RPNEvent(sublime_plugin.EventListener):
             'U': self.undo,
             'C': self.clear_stack,
             '?': self.help,
-            'q': self.quit
         }
 
         self.mode_commands = {
@@ -138,6 +115,7 @@ class RPNEvent(sublime_plugin.EventListener):
                 self.edit_region_start = view.size()
 
             else:
+                # handle case where delete occurred bast edit region
                 if view.size() < self.edit_region_start:
                     self.update_rpn(view)
                     return
@@ -210,7 +188,6 @@ class RPNEvent(sublime_plugin.EventListener):
                 self.stack.append(last_val)
             except ValueError:
                 self.run_command(arg)
-                print("Here with arg {}".format(arg))
 
     #--------------------------------------------
     def erase_line(self):
@@ -407,12 +384,6 @@ class RPNEvent(sublime_plugin.EventListener):
 
         self.mode = self.prev_mode
         self.base = BIN
-
-    #--------------------------------------------
-    def quit(self):
-        "Quit out of RPN"
-
-        sublime.run_command('rpn_command', {'quit': True})
 
 
 ########################################################################################
