@@ -56,27 +56,32 @@ class RPNEvent(sublime_plugin.EventListener):
         self.done = False
         self.prev_stack, self.stack = [], []
 
-        self.commands = {
+        always_legal_cmds = {
+            'U': self.undo,
+            'C': self.clear_stack,
+            'S': self.swap_stack,
+            '?': self.help,
+            ':': self.change_mode,
+        }
+
+        basic_cmds = {
             '+': self.add,
             '-': self.subtract,
             '*': self.multiply,
             '/': self.divide,
             '<': self.shift_left,
             '>': self.shift_right,
+        }
+
+        programmer_cmds = {
             '|': self.or_func,
             '&': self.and_func,
             'x': self.xor,
             '~': self.not_func,
             '^': self.exponent,
-
-            # modes
-            ':': self.change_mode,
-
-            # stack
-            'U': self.undo,
-            'C': self.clear_stack,
-            '?': self.help,
         }
+
+        scientific_cmds = {}
 
         self.mode_commands = {
             'D': self.decimal,
@@ -89,16 +94,49 @@ class RPNEvent(sublime_plugin.EventListener):
             ':': self.quit_change_mode
         }
 
+        print("Here 0")
+        self.all_commands = always_legal_cmds.copy()
+        self.all_commands.update(basic_cmds)
+        self.all_commands.update(programmer_cmds)
+        self.all_commands.update(scientific_cmds)
+
+        self.basic_commands = {}
+        self.basic_commands.update(always_legal_cmds)
+        self.basic_commands.update(basic_cmds)
+
+        self.programmer_commands = {}
+        self.programmer_commands.update(always_legal_cmds)
+        self.programmer_commands.update(basic_cmds)
+        self.programmer_commands.update(programmer_cmds)
+
+        self.scientific_commands = {}
+        self.scientific_commands.update(always_legal_cmds)
+        self.scientific_commands.update(basic_cmds)
+        self.scientific_commands.update(scientific_cmds)
+
+        print("Here 1")
         self.commands_that_dont_affect_stack = 'DHB?Uq'
         self.base = DEC
         self.mode, self.prev_mode = PROGRAMMER, PROGRAMMER
         self.help_str = self.gen_help_str()
         self.that_was_me = False
         self.edit_region_start = 0
+        print("Here 2")
+
+    def get_legal_commands(self):
+        return {
+            BASIC: self.basic_commands,
+            PROGRAMMER: self.programmer_commands,
+            SCIENTIFIC: self.scientific_commands,
+            HELP: self.all_commands,
+            CHANGE_MODE: self.mode_commands
+        }[self.mode]
 
     #--------------------------------------------
     def on_activated_async(self, view):
+        print("Here")
         if(not self.that_was_me and view.name() == RPN_WINDOW_NAME):
+            print("Here 2")
             self.update_rpn(view)
             self.that_was_me = False
 
@@ -115,7 +153,7 @@ class RPNEvent(sublime_plugin.EventListener):
                 self.edit_region_start = view.size()
 
             else:
-                # handle case where delete occurred bast edit region
+                # handle case where delete occurred before edit region
                 if view.size() < self.edit_region_start:
                     self.update_rpn(view)
                     return
@@ -123,29 +161,41 @@ class RPNEvent(sublime_plugin.EventListener):
                 current_region = sublime.Region(self.edit_region_start, view.size())
                 text = view.substr(current_region)
 
-                # catch what happens when the input panel is cleared
-                # on any character, if help_str is populated, then
-                # remove the help and erase the panel
+                # if in help mode, then remove the help and re-draw the panel
                 if self.mode == HELP:
                     self.mode = self.prev_mode
                     self.update_rpn(view)
                     return
                 elif self.mode == CHANGE_MODE:
-                    mode_cmd = self.mode_commands[text]
+                    # this is if colon (:) was previously pressed
+                    try:
+                        mode_cmd = self.mode_commands[text]
+                    except KeyError:
+                        self.update_rpn(view)
+                        return
                     mode_cmd()
                     self.update_rpn(view)
                     return
 
                 # if a command key is entered, then run the command and clear the input panel
-                if text[-1] in self.commands.keys():
-                    self.run_command(text[-1])
-                    self.update_rpn(view)
+                legal_commands = {
+                    BASIC:      self.basic_commands,
+                    PROGRAMMER: self.programmer_commands,
+                    SCIENTIFIC: self.scientific_commands
+                }[self.mode]
+                try:
+                    key = text[-1]
+                    if key in legal_commands.keys():
+                        self.run_command(legal_commands[key], key)
+                        self.update_rpn(view)
 
-                elif text[-1] == '\n':
-                    text_args = self.convert_text_to_args(text)
-                    self.process(text_args)
-                    # send the new stack and status to the RPN window
-                    self.update_rpn(view)
+                    elif text[-1] == '\n':
+                        text_args = self.convert_text_to_args(text)
+                        self.process(text_args)
+                        # send the new stack and status to the RPN window
+                        self.update_rpn(view)
+                except IndexError:
+                    pass
 
     #--------------------------------------------
     def update_rpn(self, view):
@@ -159,9 +209,9 @@ class RPNEvent(sublime_plugin.EventListener):
         "Returns the help string based on all of the available commands"
 
         h_txt = "{:^30}\n\n".format("RPN Commands")
-        command_keys = sorted(self.commands.keys())
+        command_keys = sorted(self.all_commands)
         for key in command_keys:
-            cmd = self.commands[key]
+            cmd = self.get_legal_commands()[key]
             h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
         h_txt += "\n{:^30}".format("Any key to exit.")
         return h_txt
@@ -170,7 +220,7 @@ class RPNEvent(sublime_plugin.EventListener):
     def convert_text_to_args(self, text):
         "Convert the text from the input panel into a list of arguments, working back-to-front."
         text_args = []
-        while len(text) and text[-1] in self.commands.keys():
+        while len(text) and text[-1] in self.get_legal_commands().keys():
             text_args.insert(0, text[-1])
             text = text[:-1]
         if text:
@@ -183,7 +233,10 @@ class RPNEvent(sublime_plugin.EventListener):
 
         for arg in text_args:
             try:
-                last_val = int(arg, self.base)
+                if self.mode == PROGRAMMER:
+                    last_val = int(arg, self.base)
+                else:
+                    last_val = float(arg)
                 self.prev_stack.append(self.stack[:])
                 self.stack.append(last_val)
             except ValueError:
@@ -195,9 +248,8 @@ class RPNEvent(sublime_plugin.EventListener):
         pass
 
     #--------------------------------------------
-    def run_command(self, key):
+    def run_command(self, command, key):
         try:
-            command = self.commands[key]
             if key not in self.commands_that_dont_affect_stack:
                 self.prev_stack.append(self.stack[:])
             command()
@@ -281,7 +333,7 @@ class RPNEvent(sublime_plugin.EventListener):
         "Shift right: x >> 1"
 
         vals = self.pop_values(1)
-        self.stack.append(int(vals[0]/2))
+        self.stack.append(vals[0]/2)
 
     #--------------------------------------------
     def or_func(self):
@@ -317,10 +369,12 @@ class RPNEvent(sublime_plugin.EventListener):
 
         vals = self.pop_values(2)
         try:
-            result = int(math.pow(vals[1], vals[0]))
+            result = math.pow(vals[1], vals[0])
         except Exception as exp:
             sublime.error_message("math error: {}^{}\n{}".format(vals[1], vals[0], exp))
         else:
+            if self.mode == PROGRAMMER:
+                result = int(result)
             self.stack.append(result)
 
     #--------------------------------------------
@@ -338,6 +392,13 @@ class RPNEvent(sublime_plugin.EventListener):
         "Clears the stack"
 
         self.stack = []
+
+    #--------------------------------------------
+    def swap_stack(self):
+        "Swaps the last two values on the stack"
+
+        x, y = self.pop_values(2)
+        self.stack.extend([x, y])
 
     #--------------------------------------------
     def mode_basic(self):
@@ -397,7 +458,6 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         self.mode = kwargs['mode']
         self.help_str = kwargs['help_str']
         self.base = kwargs['base']
-        print("Here with {}".format(stack))
 
         # self.view.set_read_only(False)
         # whole_region = sublime.Region(0, self.view.size())
@@ -430,11 +490,16 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def print_val(self, val):
-        base_char = {2: 'b', 8: 'o', 10: 'd', 16: 'X'}[self.base]
-        fmt = "{:%s}" % (base_char)
-        val_str = fmt.format(int(val))
+        if self.mode == PROGRAMMER:
+            base_char = {2: 'b', 8: 'o', 10: 'd', 16: 'X'}[self.base]
+            fmt = "{:#%s}" % (base_char)
+        else:
+            fmt = "{:g}"
+        if self.mode == PROGRAMMER:
+            val = int(val)
+        val_str = fmt.format(val)
 
-        if self.base in (2, 8, 16) and len(val_str) > 4:
+        if self.mode == PROGRAMMER and self.base in (2, 8, 16) and len(val_str) > 4:
             vals = []
             while len(val_str):
                 vals.insert(0, val_str[-4:])
@@ -499,4 +564,3 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
 #         # go fetch another command
 #         self.run()
-
