@@ -131,9 +131,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def on_activated_async(self, view):
-        print("Here")
         if(not self.that_was_me and view.name() == RPN_WINDOW_NAME):
-            print("Here 2")
             self.update_rpn(view)
             self.that_was_me = False
 
