@@ -554,37 +554,3 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
             bar_str += self.mode_bar.format("(S)CIENTIFIC", "") + '\n'
 
         return bar_str
-
-#     #--------------------------------------------
-#     def run(self):
-#         for aview in self.window.views():
-#             if aview.name() == RPN_WINDOW_NAME:
-#                 self.opanel = aview
-#                 self.window.focus_view(self.opanel)
-#                 break
-
-#         if self.opanel is None:
-#             self.opanel = self.window.new_file()
-#             self.opanel.set_name(RPN_WINDOW_NAME)
-#             self.opanel.set_read_only(True)
-#             self.opanel.settings().set('last_point', 0)
-#             self.opanel.set_scratch(True)
-
-#         self.window.focus_view(self.opanel)
-#         self.ipanel = self.window.show_input_panel("%5d> " % len(self.stack), "", self.on_done, self.on_change, self.on_cancel)
-#         self.ipanel_id = self.ipanel.id()
-#         self.update_rpn()
-
-#     #--------------------------------------------
-#     def on_done(self, text):
-#         "Called when enter is pressed on the input panel"
-
-#         text_args = self.convert_text_to_args(text)
-
-#         self.process(text_args)
-
-#         # send the new stack and status to the RPN window
-#         self.update_rpn()
-
-#         # go fetch another command
-#         self.run()
