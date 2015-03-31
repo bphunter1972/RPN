@@ -69,19 +69,20 @@ class RPNEvent(sublime_plugin.EventListener):
             '-': self.subtract,
             '*': self.multiply,
             '/': self.divide,
-            '<': self.shift_left,
-            '>': self.shift_right,
         }
 
         programmer_cmds = {
             '|': self.or_func,
             '&': self.and_func,
-            'x': self.xor,
             '~': self.not_func,
-            '^': self.exponent,
+            '^': self.xor,
+            '<': self.shift_left,
+            '>': self.shift_right,
         }
 
-        scientific_cmds = {}
+        scientific_cmds = {
+            '^': self.exponent,
+        }
 
         self.mode_commands = {
             'D': self.decimal,
@@ -120,6 +121,7 @@ class RPNEvent(sublime_plugin.EventListener):
         self.that_was_me = False
         self.edit_region_start = 0
 
+    #--------------------------------------------
     def get_legal_commands(self):
         return {
             BASIC: self.basic_commands,
@@ -136,9 +138,9 @@ class RPNEvent(sublime_plugin.EventListener):
             self.that_was_me = False
 
     #--------------------------------------------
-    def on_close(self, view):
-        if(view.name() == RPN_WINDOW_NAME):
-            print("Eeek, I'm dead")
+    # def on_close(self, view):
+    #     if(view.name() == RPN_WINDOW_NAME):
+    #         print("Eeek, I'm dead")
 
     #--------------------------------------------
     def on_modified(self, view):
@@ -173,25 +175,46 @@ class RPNEvent(sublime_plugin.EventListener):
                     return
 
                 # if a command key is entered, then run the command and clear the input panel
-                try:
-                    key = text[-1]
-                except IndexError:
-                    pass
                 else:
-                    legal_commands = {
-                        BASIC:      self.basic_commands,
-                        PROGRAMMER: self.programmer_commands,
-                        SCIENTIFIC: self.scientific_commands
-                    }[self.mode]
-                    if key in legal_commands.keys():
-                        if len(text) > 1:
-                            args = text[:-1], legal_commands[text[-1]]
-                        else:
-                            args = (legal_commands[text[-1]], )
-                    elif key == '\n':
-                        args = (text,)
-                    self.process(args)
-                    self.update_rpn(view)
+                    self.handle_text_input(text, view)
+
+    #--------------------------------------------
+    def handle_text_input(self, text, view):
+        """
+        Check the text input to see if:
+        a) the last key pressed was a command-key (a legal one, based on the mode),
+        b) the last key pressed was return
+        In either case, process the arguments and update the RPN window
+        """
+
+        try:
+            key = text[-1]
+        except IndexError:
+            return
+
+        legal_commands = {
+            BASIC:      self.basic_commands,
+            PROGRAMMER: self.programmer_commands,
+            SCIENTIFIC: self.scientific_commands
+        }[self.mode]
+
+        args = None
+        if key in legal_commands.keys():
+            if len(text) > 1:
+                args = text[:-1], legal_commands[text[-1]]
+            else:
+                args = (legal_commands[text[-1]], )
+        elif key == '\n':
+            # if only whitespace, then ignore
+            text = text.strip()
+            if not text:
+                self.update_rpn(view)
+                return
+            args = (text,)
+
+        if args is not None:
+            self.process(args)
+            self.update_rpn(view)
 
     #--------------------------------------------
     def update_rpn(self, view):
@@ -205,9 +228,10 @@ class RPNEvent(sublime_plugin.EventListener):
         "Returns the help string based on all of the available commands"
 
         h_txt = "{:^30}\n\n".format("RPN Commands")
-        command_keys = sorted(self.all_commands)
+        legal_commands = self.get_legal_commands()
+        command_keys = sorted(legal_commands.keys())
         for key in command_keys:
-            cmd = self.get_legal_commands()[key]
+            cmd = legal_commands[key]
             h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
         h_txt += "\n{:^30}".format("Any key to exit.")
         return h_txt
@@ -317,6 +341,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
         if self.mode != HELP:
             self.prev_mode = self.mode
+            self.help_str = self.gen_help_str()
         self.mode = HELP
 
     #--------------------------------------------
@@ -371,8 +396,6 @@ class RPNEvent(sublime_plugin.EventListener):
         except Exception as exp:
             sublime.error_message("math error: {}^{}\n{}".format(vals[1], vals[0], exp))
         else:
-            if self.mode == PROGRAMMER:
-                result = int(result)
             self.stack.append(result)
 
     #--------------------------------------------
@@ -488,7 +511,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     def print_val(self, val):
         if self.mode == PROGRAMMER:
             base_char = {2: 'b', 8: 'o', 10: 'd', 16: 'X'}[self.base]
-            fmt = "{:#%s}" % (base_char)
+            fmt = "{:%s}" % (base_char)
         else:
             fmt = "{:g}"
         if self.mode == PROGRAMMER:
@@ -507,11 +530,11 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     #--------------------------------------------
     def get_mode_line(self):
         # first, the current status fields
-        base_str = {2: "BIN", 8: "OCT", 10: "DEC", 16: "HEX"}[self.base]
+        base_str = {2: "BIN", 8: "OCT", 10: "DEC", 16: "HEX"}[self.base] if self.mode == PROGRAMMER else ""
         mode_str = {BASIC: "BASIC",
                     PROGRAMMER: "PROGRAMMER",
                     SCIENTIFIC: "SCIENTIFIC",
-                    HELP: "",
+                    HELP: "HELP",
                     CHANGE_MODE: "",
                     }[self.mode]
 
