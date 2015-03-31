@@ -5,7 +5,7 @@ Interface
  ☐ Remove input panel and just use output panel.
 Stack
  ☐ Command to use previous values in the stack
- ☐ Flip last two values in the stack
+ ✔ Flip last two values in the stack @done (15-03-30 16:34)
  ☐ Delete last value in the stack
 Modes
  ✔ Create scientific, basic, and programmer modes @done (15-03-27 22:22)
