@@ -94,7 +94,6 @@ class RPNEvent(sublime_plugin.EventListener):
             ':': self.quit_change_mode
         }
 
-        print("Here 0")
         self.all_commands = always_legal_cmds.copy()
         self.all_commands.update(basic_cmds)
         self.all_commands.update(programmer_cmds)
@@ -114,14 +113,12 @@ class RPNEvent(sublime_plugin.EventListener):
         self.scientific_commands.update(basic_cmds)
         self.scientific_commands.update(scientific_cmds)
 
-        print("Here 1")
-        self.commands_that_dont_affect_stack = 'DHB?Uq'
+        self.commands_that_dont_affect_stack = (self.help, self.change_mode)
         self.base = DEC
         self.mode, self.prev_mode = PROGRAMMER, PROGRAMMER
         self.help_str = self.gen_help_str()
         self.that_was_me = False
         self.edit_region_start = 0
-        print("Here 2")
 
     def get_legal_commands(self):
         return {
@@ -178,31 +175,32 @@ class RPNEvent(sublime_plugin.EventListener):
                     return
 
                 # if a command key is entered, then run the command and clear the input panel
-                legal_commands = {
-                    BASIC:      self.basic_commands,
-                    PROGRAMMER: self.programmer_commands,
-                    SCIENTIFIC: self.scientific_commands
-                }[self.mode]
                 try:
                     key = text[-1]
-                    if key in legal_commands.keys():
-                        self.run_command(legal_commands[key], key)
-                        self.update_rpn(view)
-
-                    elif text[-1] == '\n':
-                        text_args = self.convert_text_to_args(text)
-                        self.process(text_args)
-                        # send the new stack and status to the RPN window
-                        self.update_rpn(view)
                 except IndexError:
                     pass
+                else:
+                    legal_commands = {
+                        BASIC:      self.basic_commands,
+                        PROGRAMMER: self.programmer_commands,
+                        SCIENTIFIC: self.scientific_commands
+                    }[self.mode]
+                    if key in legal_commands.keys():
+                        if len(text) > 1:
+                            args = text[:-1], legal_commands[text[-1]]
+                        else:
+                            args = (legal_commands[text[-1]], )
+                    elif key == '\n':
+                        args = (text,)
+                    self.process(args)
+                    self.update_rpn(view)
 
     #--------------------------------------------
     def update_rpn(self, view):
         "Runs the print_to_rpn command"
 
         self.that_was_me = True
-        view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'help_str': self.help_str, 'base': self.base})
+        view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'prev_mode': self.prev_mode, 'help_str': self.help_str, 'base': self.base})
 
     #--------------------------------------------
     def gen_help_str(self):
@@ -228,18 +226,22 @@ class RPNEvent(sublime_plugin.EventListener):
         return text_args
 
     #--------------------------------------------
-    def process(self, text_args):
-        "Take all values and commands supplied from the input panel and process them to create the new stack."
+    def process(self, args):
+        "Take all values and commands supplied from the input and process them to create the new stack."
 
-        for arg in text_args:
-            try:
-                if self.mode == PROGRAMMER:
-                    last_val = int(arg, self.base)
+        for arg in args:
+            if type(arg) is str:
+                try:
+                    if self.mode == PROGRAMMER:
+                        last_val = int(arg, self.base)
+                    else:
+                        last_val = float(arg)
+                except ValueError:
+                    sublime.error_message("Unable to convert {} to a number.".format(arg))
                 else:
-                    last_val = float(arg)
-                self.prev_stack.append(self.stack[:])
-                self.stack.append(last_val)
-            except ValueError:
+                    self.prev_stack.append(self.stack[:])
+                    self.stack.append(last_val)
+            else:
                 self.run_command(arg)
 
     #--------------------------------------------
@@ -248,13 +250,11 @@ class RPNEvent(sublime_plugin.EventListener):
         pass
 
     #--------------------------------------------
-    def run_command(self, command, key):
+    def run_command(self, command):
         try:
-            if key not in self.commands_that_dont_affect_stack:
+            if command not in self.commands_that_dont_affect_stack:
                 self.prev_stack.append(self.stack[:])
             command()
-        except KeyError:
-            sublime.error_message("Unknown command: %s" % key)
         except InsufficientStackDepth as exc:
             sublime.error_message("Not enough values for operation:\n{} required, but only {} available.".format(exc.required, len(self.stack)))
 
@@ -456,15 +456,13 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     def run(self, edit, **kwargs):
         stack = kwargs['stack']
         self.mode = kwargs['mode']
+        self.prev_mode = kwargs['prev_mode']
         self.help_str = kwargs['help_str']
         self.base = kwargs['base']
 
-        # self.view.set_read_only(False)
-        # whole_region = sublime.Region(0, self.view.size())
         self.erase_buffer(edit)
         rpn_txt = self.get_rpn_txt(stack)
         self.view.insert(edit, 0, rpn_txt)
-        # self.view.set_read_only(True)
 
     #--------------------------------------------
     def erase_buffer(self, edit):
@@ -524,10 +522,15 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def get_change_mode_str(self):
-        bar_str  = self.mode_bar.format("(b)ASIC", "(B)IN") + '\n'
-        bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
-        bar_str += self.mode_bar.format("(S)CIENTIFIC", "(D)EC") + '\n'
-        bar_str += self.mode_bar.format("", "(H)EX") + '\n'
+        if self.prev_mode == PROGRAMMER:
+            bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
+            bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
+            bar_str += self.mode_bar.format("(S)CIENTIFIC", "(D)EC") + '\n'
+            bar_str += self.mode_bar.format("",             "(H)EX") + '\n'
+        else:
+            bar_str  = self.mode_bar.format("(b)ASIC",      "") + '\n'
+            bar_str += self.mode_bar.format("(P)ROGRAMMER", "") + '\n'
+            bar_str += self.mode_bar.format("(S)CIENTIFIC", "") + '\n'
 
         return bar_str
 
