@@ -1,15 +1,15 @@
 Interface
- ☐ When rpn window activated, re-activate the input buffer.
+ ✘ When rpn window activated, re-activate the input buffer. @cancelled (15-03-31 16:41)
  ✘ Put the rpn window down at the lower 1/4th of the window. @cancelled (15-03-27 22:23)
  ☐ Right-shift values to widest...binary only?
- ☐ Remove input panel and just use output panel.
+ ✔ Remove input panel and just use output panel. @done (15-03-31 16:41)
 Stack
  ☐ Command to use previous values in the stack
  ✔ Flip last two values in the stack @done (15-03-30 16:34)
  ☐ Delete last value in the stack
 Modes
  ✔ Create scientific, basic, and programmer modes @done (15-03-27 22:22)
- ☐ Add basic functions, float, etc.
+ ✔ Add basic functions, float, etc. @done (15-03-31 16:42)
  ☐ Add scientific functions
  ✔ Set off status bar with different colors? @done (15-03-27 22:23)
 Help
