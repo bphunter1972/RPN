@@ -1,7 +1,7 @@
 Interface
  ✘ When rpn window activated, re-activate the input buffer. @cancelled (15-03-31 16:41)
  ✘ Put the rpn window down at the lower 1/4th of the window. @cancelled (15-03-27 22:23)
- ☐ Right-shift values to widest...binary only?
+ ✔ Right-shift values to widest...binary only? @done (15-04-01 14:29)
  ✔ Remove input panel and just use output panel. @done (15-03-31 16:41)
 Stack
  ☐ Command to use previous values in the stack

@@ -387,7 +387,9 @@ class RPNEvent(sublime_plugin.EventListener):
         "Bitwise NOT: ~x"
 
         vals = self.pop_values(1)
-        self.stack.append(~vals[0])
+        # mask = 0xFFFFFFFF # int('1' * globals.BIN_MAX_BITS, base=2)
+        mask = int('1' * globals.BIN_MAX_BITS, base=2)
+        self.stack.append(~int(vals[0]) & mask)
 
     #--------------------------------------------
     def exponent(self):

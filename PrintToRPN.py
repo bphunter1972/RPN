@@ -29,7 +29,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         if self.mode == globals.CHANGE_MODE:
             return self.get_change_mode_str()
 
-        str = self.get_mode_line() + "\n\n"
+        str = self.get_mode_line()
         if self.mode == globals.HELP:
             str += self.help_str
         else:
@@ -44,7 +44,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     #--------------------------------------------
     def print_val(self, val):
         if self.mode == globals.PROGRAMMER:
-            base_char = {2: 'b', 8: 'o', 10: 'd', 16: 'X'}[self.base]
+            base_char = {2: '0%db' % (globals.BIN_MAX_BITS), 8: '0%do' % (globals.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (globals.BIN_MAX_BITS/4)}[self.base]
             fmt = "{:%s}" % (base_char)
         else:
             fmt = "{:g}"
@@ -72,7 +72,17 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
                     globals.CHANGE_MODE: "",
                     }[self.mode]
 
-        mode_line = self.mode_bar.format(mode_str, base_str)
+        mode_line = self.mode_bar.format(mode_str, base_str) + "\n\n"
+
+        # present bit numbers when in binary mode
+        if self.mode == globals.PROGRAMMER and self.base == globals.BIN:
+            bit_line = "   "
+            for num in range(globals.BIN_MAX_BITS-1, 0, -8):
+                num_spaces = 8 if num > 7 else 7
+                bit_line += "%d" % num + ' '*num_spaces
+            bit_line += "0\n"
+            mode_line += bit_line
+
         return mode_line
 
     #--------------------------------------------
