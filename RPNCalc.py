@@ -69,6 +69,7 @@ class RPNEvent(sublime_plugin.EventListener):
             '-': self.subtract,
             '*': self.multiply,
             '/': self.divide,
+            '%': self.modulo,
         }
 
         programmer_cmds = {
@@ -333,7 +334,22 @@ class RPNEvent(sublime_plugin.EventListener):
         "Divides x/y"
 
         vals = self.pop_values(2)
-        self.stack.append(vals[1]/vals[0])
+        try:
+            self.stack.append(vals[1]/vals[0])
+        except ZeroDivisionError:
+            sublime.error_message("Unable to divide by zero")
+            self.undo()
+
+    #--------------------------------------------
+    def modulo(self):
+        "Calculates the remainder of x/y"
+
+        vals = self.pop_values(2)
+        try:
+            self.stack.append(vals[1] % vals[0])
+        except ZeroDivisionError:
+            sublime.error_message("Unable to divide by zero")
+            self.undo()
 
     #--------------------------------------------
     def help(self):

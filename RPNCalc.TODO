@@ -10,8 +10,11 @@ Stack
 Modes
  ✔ Create scientific, basic, and programmer modes @done (15-03-27 22:22)
  ✔ Add basic functions, float, etc. @done (15-03-31 16:42)
- ☐ Add scientific functions
+ ☐ Add scientific functions (sin, cos, tan, etc.)
  ✔ Set off status bar with different colors? @done (15-03-27 22:23)
+ ☐ Create a function which displays the value of a field of bits
+ ✔ Add modulo function @done (15-03-31 17:12)
+
 Help
  ☐ Groups of help functions
  ☐ Columnize
