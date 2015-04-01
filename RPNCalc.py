@@ -132,9 +132,9 @@ class RPNEvent(sublime_plugin.EventListener):
             self.that_was_me = False
 
     #--------------------------------------------
-    # def on_close(self, view):
-    #     if(view.name() == globals.RPN_WINDOW_NAME):
-    #         print("Eeek, I'm dead")
+    def on_close(self, view):
+        if(view.name() == globals.RPN_WINDOW_NAME):
+            self.__init__()
 
     #--------------------------------------------
     def on_modified(self, view):
@@ -215,7 +215,10 @@ class RPNEvent(sublime_plugin.EventListener):
         "Runs the print_to_rpn command"
 
         self.that_was_me = True
-        view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'prev_mode': self.prev_mode, 'help_str': self.help_str, 'base': self.base})
+        try:
+            view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'prev_mode': self.prev_mode, 'help_str': self.help_str, 'base': self.base})
+        except Exception as exc:
+            sublime.error_message("Sublime exception: {}".format(exc))
 
     #--------------------------------------------
     def gen_help_str(self):
