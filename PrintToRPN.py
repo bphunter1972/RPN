@@ -1,8 +1,8 @@
 import sublime
 import sublime_plugin
+from . import globals
 
-from RPNCalc import PROGRAMMER, BASIC, SCIENTIFIC, HELP, CHANGE_MODE
-# from RPNCalc import BIN, OCT, DEC, HEX
+# from RPNCalc import globals.BIN, OCT, DEC, HEX
 
 ########################################################################################
 class PrintToRpnCommand(sublime_plugin.TextCommand):
@@ -28,11 +28,11 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def get_rpn_txt(self, stack):
-        if self.mode == CHANGE_MODE:
+        if self.mode == globals.CHANGE_MODE:
             return self.get_change_mode_str()
 
         str = self.get_mode_line() + "\n\n"
-        if self.mode == HELP:
+        if self.mode == globals.HELP:
             str += self.help_str
         else:
             if stack:
@@ -45,16 +45,16 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def print_val(self, val):
-        if self.mode == PROGRAMMER:
+        if self.mode == globals.PROGRAMMER:
             base_char = {2: 'b', 8: 'o', 10: 'd', 16: 'X'}[self.base]
             fmt = "{:%s}" % (base_char)
         else:
             fmt = "{:g}"
-        if self.mode == PROGRAMMER:
+        if self.mode == globals.PROGRAMMER:
             val = int(val)
         val_str = fmt.format(val)
 
-        if self.mode == PROGRAMMER and self.base in (2, 8, 16) and len(val_str) > 4:
+        if self.mode == globals.PROGRAMMER and self.base in (globals.BIN, globals.OCT, globals.HEX) and len(val_str) > 4:
             vals = []
             while len(val_str):
                 vals.insert(0, val_str[-4:])
@@ -66,12 +66,12 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     #--------------------------------------------
     def get_mode_line(self):
         # first, the current status fields
-        base_str = {2: "BIN", 8: "OCT", 10: "DEC", 16: "HEX"}[self.base] if self.mode == PROGRAMMER else ""
-        mode_str = {BASIC: "BASIC",
-                    PROGRAMMER: "PROGRAMMER",
-                    SCIENTIFIC: "SCIENTIFIC",
-                    HELP: "HELP",
-                    CHANGE_MODE: "",
+        base_str = {globals.BIN: "BIN", globals.OCT: "OCT", globals.DEC: "DEC", globals.HEX: "HEX"}[self.base] if self.mode == globals.PROGRAMMER else ""
+        mode_str = {globals.BASIC: "BASIC",
+                    globals.PROGRAMMER: "PROGRAMMER",
+                    globals.SCIENTIFIC: "SCIENTIFIC",
+                    globals.HELP: "HELP",
+                    globals.CHANGE_MODE: "",
                     }[self.mode]
 
         mode_line = self.mode_bar.format(mode_str, base_str)
@@ -79,7 +79,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def get_change_mode_str(self):
-        if self.prev_mode == PROGRAMMER:
+        if self.prev_mode == globals.PROGRAMMER:
             bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
             bar_str += self.mode_bar.format("(S)CIENTIFIC", "(D)EC") + '\n'

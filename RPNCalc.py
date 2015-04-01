@@ -5,7 +5,7 @@
 import sublime
 import sublime_plugin
 import math
-
+from . import globals
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
@@ -14,9 +14,6 @@ __version__ = '0.1'
 
 ########################################################################################
 # Globals
-RPN_WINDOW_NAME = ">> rpn <<"
-BASES = (BIN, OCT, DEC, HEX) = (2, 8, 10, 16)
-MODES = (BASIC, PROGRAMMER, SCIENTIFIC, HELP, CHANGE_MODE) = range(5)
 
 ########################################################################################
 class InsufficientStackDepth(Exception):
@@ -34,13 +31,13 @@ class RpnCommand(sublime_plugin.WindowCommand):
     def run(self):
         self.opanel = None
         for aview in self.window.views():
-            if aview.name() == RPN_WINDOW_NAME:
+            if aview.name() == globals.RPN_WINDOW_NAME:
                 self.opanel = aview
                 break
 
         if self.opanel is None:
             self.opanel = self.window.new_file()
-            self.opanel.set_name(RPN_WINDOW_NAME)
+            self.opanel.set_name(globals.RPN_WINDOW_NAME)
             self.opanel.set_scratch(True)
 
         self.window.focus_view(self.opanel)
@@ -116,8 +113,8 @@ class RPNEvent(sublime_plugin.EventListener):
         self.scientific_commands.update(scientific_cmds)
 
         self.commands_that_dont_affect_stack = (self.help, self.change_mode)
-        self.base = DEC
-        self.mode, self.prev_mode = PROGRAMMER, PROGRAMMER
+        self.base = globals.DEC
+        self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
         self.help_str = self.gen_help_str()
         self.that_was_me = False
         self.edit_region_start = 0
@@ -125,27 +122,27 @@ class RPNEvent(sublime_plugin.EventListener):
     #--------------------------------------------
     def get_legal_commands(self):
         return {
-            BASIC: self.basic_commands,
-            PROGRAMMER: self.programmer_commands,
-            SCIENTIFIC: self.scientific_commands,
-            HELP: self.all_commands,
-            CHANGE_MODE: self.mode_commands
+            globals.BASIC: self.basic_commands,
+            globals.PROGRAMMER: self.programmer_commands,
+            globals.SCIENTIFIC: self.scientific_commands,
+            globals.HELP: self.all_commands,
+            globals.CHANGE_MODE: self.mode_commands
         }[self.mode]
 
     #--------------------------------------------
     def on_activated_async(self, view):
-        if(not self.that_was_me and view.name() == RPN_WINDOW_NAME):
+        if(not self.that_was_me and view.name() == globals.RPN_WINDOW_NAME):
             self.update_rpn(view)
             self.that_was_me = False
 
     #--------------------------------------------
     # def on_close(self, view):
-    #     if(view.name() == RPN_WINDOW_NAME):
+    #     if(view.name() == globals.RPN_WINDOW_NAME):
     #         print("Eeek, I'm dead")
 
     #--------------------------------------------
     def on_modified(self, view):
-        if(view.name() == RPN_WINDOW_NAME):
+        if(view.name() == globals.RPN_WINDOW_NAME):
             if self.that_was_me:
                 self.that_was_me = False
                 self.edit_region_start = view.size()
@@ -160,11 +157,11 @@ class RPNEvent(sublime_plugin.EventListener):
                 text = view.substr(current_region)
 
                 # if in help mode, then remove the help and re-draw the panel
-                if self.mode == HELP:
+                if self.mode == globals.HELP:
                     self.mode = self.prev_mode
                     self.update_rpn(view)
                     return
-                elif self.mode == CHANGE_MODE:
+                elif self.mode == globals.CHANGE_MODE:
                     # this is if colon (:) was previously pressed
                     try:
                         mode_cmd = self.mode_commands[text]
@@ -194,9 +191,9 @@ class RPNEvent(sublime_plugin.EventListener):
             return
 
         legal_commands = {
-            BASIC:      self.basic_commands,
-            PROGRAMMER: self.programmer_commands,
-            SCIENTIFIC: self.scientific_commands
+            globals.BASIC:      self.basic_commands,
+            globals.PROGRAMMER: self.programmer_commands,
+            globals.SCIENTIFIC: self.scientific_commands
         }[self.mode]
 
         args = None
@@ -255,7 +252,7 @@ class RPNEvent(sublime_plugin.EventListener):
         for arg in args:
             if type(arg) is str:
                 try:
-                    if self.mode == PROGRAMMER:
+                    if self.mode == globals.PROGRAMMER:
                         last_val = int(arg, self.base)
                     else:
                         last_val = float(arg)
@@ -300,7 +297,7 @@ class RPNEvent(sublime_plugin.EventListener):
         "Press : to change calculator modes and bases."
 
         self.prev_mode = self.mode
-        self.mode = CHANGE_MODE
+        self.mode = globals.CHANGE_MODE
 
     #--------------------------------------------
     def quit_change_mode(self):
@@ -355,10 +352,10 @@ class RPNEvent(sublime_plugin.EventListener):
     def help(self):
         "Displays this help screen."
 
-        if self.mode != HELP:
+        if self.mode != globals.HELP:
             self.prev_mode = self.mode
             self.help_str = self.gen_help_str()
-        self.mode = HELP
+        self.mode = globals.HELP
 
     #--------------------------------------------
     def shift_left(self):
@@ -441,44 +438,44 @@ class RPNEvent(sublime_plugin.EventListener):
     def mode_basic(self):
         "Changes to the basic mode"
 
-        self.mode = BASIC
+        self.mode = globals.BASIC
 
     #--------------------------------------------
     def mode_programmer(self):
         "Changes to the programmer mode"
 
-        self.mode = PROGRAMMER
+        self.mode = globals.PROGRAMMER
 
     #--------------------------------------------
     def mode_scientific(self):
         "Changes to the scientific mode"
 
-        self.mode = SCIENTIFIC
+        self.mode = globals.SCIENTIFIC
 
     #--------------------------------------------
     def decimal(self):
         "Changes base to decimal"
 
         self.mode = self.prev_mode
-        self.base = DEC
+        self.base = globals.DEC
 
     #--------------------------------------------
     def octal(self):
         "Changes base to octal"
 
         self.mode = self.prev_mode
-        self.base = OCT
+        self.base = globals.OCT
 
     #--------------------------------------------
     def hexadecimal(self):
         "Changes base to hexadecimal"
 
         self.mode = self.prev_mode
-        self.base = HEX
+        self.base = globals.HEX
 
     #--------------------------------------------
     def binary(self):
         "Changes base to binary"
 
         self.mode = self.prev_mode
-        self.base = BIN
+        self.base = globals.BIN
