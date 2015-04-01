@@ -2,8 +2,6 @@ import sublime
 import sublime_plugin
 from . import globals
 
-# from RPNCalc import globals.BIN, OCT, DEC, HEX
-
 ########################################################################################
 class PrintToRpnCommand(sublime_plugin.TextCommand):
     base = None

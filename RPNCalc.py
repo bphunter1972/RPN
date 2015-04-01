@@ -13,9 +13,6 @@ __version__ = '0.1'
 
 
 ########################################################################################
-# Globals
-
-########################################################################################
 class InsufficientStackDepth(Exception):
     "Raised when a command requires more values than are on the stack."
 
@@ -53,7 +50,8 @@ class RPNEvent(sublime_plugin.EventListener):
         self.done = False
         self.prev_stack, self.stack = [], []
 
-        always_legal_cmds = {
+        # Create dictionaries of commands that associate key presses with the functions they call
+        fundamental_cmds = {
             'U': self.undo,
             'C': self.clear_stack,
             'S': self.swap_stack,
@@ -93,39 +91,37 @@ class RPNEvent(sublime_plugin.EventListener):
             ':': self.quit_change_mode
         }
 
-        self.all_commands = always_legal_cmds.copy()
-        self.all_commands.update(basic_cmds)
-        self.all_commands.update(programmer_cmds)
-        self.all_commands.update(scientific_cmds)
-
+        # Build these dictionaries to create command libraries based on modes
         self.basic_commands = {}
-        self.basic_commands.update(always_legal_cmds)
+        self.basic_commands.update(fundamental_cmds)
         self.basic_commands.update(basic_cmds)
 
         self.programmer_commands = {}
-        self.programmer_commands.update(always_legal_cmds)
+        self.programmer_commands.update(fundamental_cmds)
         self.programmer_commands.update(basic_cmds)
         self.programmer_commands.update(programmer_cmds)
 
         self.scientific_commands = {}
-        self.scientific_commands.update(always_legal_cmds)
+        self.scientific_commands.update(fundamental_cmds)
         self.scientific_commands.update(basic_cmds)
         self.scientific_commands.update(scientific_cmds)
 
         self.commands_that_dont_affect_stack = (self.help, self.change_mode)
+
+        # Set defaults
         self.base = globals.DEC
         self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
-        self.help_str = self.gen_help_str()
+        self.help_str = None
         self.that_was_me = False
         self.edit_region_start = 0
 
     #--------------------------------------------
     def get_legal_commands(self):
         return {
-            globals.BASIC: self.basic_commands,
-            globals.PROGRAMMER: self.programmer_commands,
-            globals.SCIENTIFIC: self.scientific_commands,
-            globals.HELP: self.all_commands,
+            globals.BASIC:       self.basic_commands,
+            globals.PROGRAMMER:  self.programmer_commands,
+            globals.SCIENTIFIC:  self.scientific_commands,
+            globals.HELP:        None,  # self.all_commands,
             globals.CHANGE_MODE: self.mode_commands
         }[self.mode]
 
@@ -166,13 +162,13 @@ class RPNEvent(sublime_plugin.EventListener):
                     try:
                         mode_cmd = self.mode_commands[text]
                     except KeyError:
+                        pass
+                    else:
+                        mode_cmd()
+                    finally:
                         self.update_rpn(view)
-                        return
-                    mode_cmd()
-                    self.update_rpn(view)
-                    return
 
-                # if a command key is entered, then run the command and clear the input panel
+                # if a command key or return is entered, then run the command and clear the input panel
                 else:
                     self.handle_text_input(text, view)
 
@@ -265,11 +261,6 @@ class RPNEvent(sublime_plugin.EventListener):
                 self.run_command(arg)
 
     #--------------------------------------------
-    def erase_line(self):
-        "Erase the current input line"
-        pass
-
-    #--------------------------------------------
     def run_command(self, command):
         try:
             if command not in self.commands_that_dont_affect_stack:
@@ -284,7 +275,6 @@ class RPNEvent(sublime_plugin.EventListener):
             sublime.error_message("Programmer Error, count={}".format(count))
 
         if len(self.stack) < count:
-            self.erase_line()
             raise InsufficientStackDepth(count)
 
         vals = []
