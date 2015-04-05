@@ -80,6 +80,10 @@ class RPNEvent(sublime_plugin.EventListener):
         scientific_cmds = {
             '^': self.exponent,
             '!': self.factorial,
+            'q': self.square,
+            'r': self.root,
+            'l': self.log2,
+            'L': self.logn,
         }
 
         self.mode_commands = {
@@ -147,7 +151,7 @@ class RPNEvent(sublime_plugin.EventListener):
                 globals.DEC:    '0123456789',
                 globals.HEX:    '0123456789abcdefABCDEF'
             }[self.base],
-            globals.SCIENTIFIC: '0123456789.'
+            globals.SCIENTIFIC: '0123456789.ep'
         }[self.mode]
 
     #--------------------------------------------
@@ -281,6 +285,10 @@ class RPNEvent(sublime_plugin.EventListener):
                 try:
                     if self.mode == globals.PROGRAMMER:
                         last_val = int(arg, self.base)
+                    elif self.mode == globals.SCIENTIFIC and arg == 'p':
+                        last_val = math.pi
+                    elif self.mode == globals.SCIENTIFIC and arg == 'e':
+                        last_val = math.e
                     else:
                         last_val = float(arg)
                 except ValueError:
@@ -443,6 +451,54 @@ class RPNEvent(sublime_plugin.EventListener):
             result = math.factorial(int(vals[0]))
         except Exception as exp:
             sublime.error_message("math error: {}!\n{}".format(vals[0], exp))
+        else:
+            self.stack.append(result)
+
+    #--------------------------------------------
+    def square(self):
+        "Square: Compute x^2"
+
+        vals = self.pop_values(1)
+        try:
+            result = math.pow(2, vals[0])
+        except Exception as exp:
+            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
+        else:
+            self.stack.append(result)
+
+    #--------------------------------------------
+    def log2(self):
+        "log2: Compute log2(x)"
+
+        vals = self.pop_values(1)
+        try:
+            result = math.log(vals[0], 2)
+        except Exception as exp:
+            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
+        else:
+            self.stack.append(result)
+
+    #--------------------------------------------
+    def logn(self):
+        "ln: Compute natural log ln(x)"
+
+        vals = self.pop_values(1)
+        try:
+            result = math.log(vals[0])
+        except Exception as exp:
+            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
+        else:
+            self.stack.append(result)
+
+    #--------------------------------------------
+    def root(self):
+        "Square root: Compute sqrt(x)"
+
+        vals = self.pop_values(1)
+        try:
+            result = math.sqrt(vals[0])
+        except Exception as exp:
+            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
         else:
             self.stack.append(result)
 
