@@ -20,8 +20,8 @@ Modes
    ☐ Create a function which displays the value of a field of bits
 
 Help
- ☐ Groups of help functions
- ☐ Columnize
+ ✔ Groups of help functions @done (15-04-04 22:10)
+ ✘ Columnize @cancelled (15-04-04 22:10)
 
 Miscellaneous
  ☐ Separate math functions into different file?

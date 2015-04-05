@@ -96,16 +96,24 @@ class RPNEvent(sublime_plugin.EventListener):
         self.basic_commands = {}
         self.basic_commands.update(fundamental_cmds)
         self.basic_commands.update(basic_cmds)
+        self.basic_commands_group = (('Fundamental Commands', fundamental_cmds),
+                                     ('Basic Commands', basic_cmds))
 
         self.programmer_commands = {}
         self.programmer_commands.update(fundamental_cmds)
         self.programmer_commands.update(basic_cmds)
         self.programmer_commands.update(programmer_cmds)
+        self.programmer_commands_group = (('Fundamental Commands', fundamental_cmds),
+                                          ('Basic Commands', basic_cmds),
+                                          ('Programmer Commands', programmer_cmds))
 
         self.scientific_commands = {}
         self.scientific_commands.update(fundamental_cmds)
         self.scientific_commands.update(basic_cmds)
         self.scientific_commands.update(scientific_cmds)
+        self.scientific_commands_group = (('Fundamental Commands', fundamental_cmds),
+                                          ('Basic Commands', basic_cmds),
+                                          ('Scientific Commands', scientific_cmds))
 
         self.commands_that_dont_affect_stack = (self.help, self.change_mode)
 
@@ -114,7 +122,11 @@ class RPNEvent(sublime_plugin.EventListener):
             globals.PROGRAMMER: self.programmer_commands,
             globals.SCIENTIFIC: self.scientific_commands
         }
-
+        self.legal_command_groups = {
+            globals.BASIC:      self.basic_commands_group,
+            globals.PROGRAMMER: self.programmer_commands_group,
+            globals.SCIENTIFIC: self.scientific_commands_group
+        }
         # Set defaults
         self.base = globals.DEC
         self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
@@ -235,11 +247,14 @@ class RPNEvent(sublime_plugin.EventListener):
         "Returns the help string based on all of the available commands"
 
         h_txt = "{:^30}\n\n".format("RPN Commands")
-        current_legal_commands = self.legal_commands[self.mode]
-        command_keys = sorted(current_legal_commands.keys())
-        for key in command_keys:
-            cmd = current_legal_commands[key]
-            h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
+        command_groups = self.legal_command_groups[self.mode]
+        for group_name, group in command_groups:
+            command_keys = sorted(group.keys())
+            h_txt += "{:<30}\n".format(group_name)
+            for key in command_keys:
+                cmd = group[key]
+                h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
+            h_txt += "\n"
         h_txt += "\n{:^30}".format("Any key to exit.")
         return h_txt
 
@@ -406,7 +421,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def exponent(self):
-        "Computes x^y"
+        "Exponent: Computes x^y"
 
         vals = self.pop_values(2)
         try:
