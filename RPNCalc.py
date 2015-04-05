@@ -79,6 +79,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
         scientific_cmds = {
             '^': self.exponent,
+            '!': self.factorial,
         }
 
         self.mode_commands = {
@@ -115,7 +116,9 @@ class RPNEvent(sublime_plugin.EventListener):
                                           ('Basic Commands', basic_cmds),
                                           ('Scientific Commands', scientific_cmds))
 
-        self.commands_that_dont_affect_stack = (self.help, self.change_mode)
+        # yes, undo affects the stack. But if it's not in this tuple, then it will
+        # not work because it would push the current stack onto prev_stack before popping
+        self.commands_that_dont_affect_stack = (self.help, self.change_mode, self.undo)
 
         self.legal_commands = {
             globals.BASIC:      self.basic_commands,
@@ -428,6 +431,18 @@ class RPNEvent(sublime_plugin.EventListener):
             result = math.pow(vals[1], vals[0])
         except Exception as exp:
             sublime.error_message("math error: {}^{}\n{}".format(vals[1], vals[0], exp))
+        else:
+            self.stack.append(result)
+
+    #--------------------------------------------
+    def factorial(self):
+        "Factorial: Find x!"
+
+        vals = self.pop_values(1)
+        try:
+            result = math.factorial(int(vals[0]))
+        except Exception as exp:
+            sublime.error_message("math error: {}!\n{}".format(vals[0], exp))
         else:
             self.stack.append(result)
 
