@@ -1,6 +1,6 @@
 import sublime
 import sublime_plugin
-from . import globals
+from . import RPNGlobals as glb
 
 ########################################################################################
 class PrintToRpnCommand(sublime_plugin.TextCommand):
@@ -32,11 +32,11 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     def get_rpn_txt(self, stack):
         "Return the string of text that will fill the RPN window"
 
-        if self.mode == globals.CHANGE_MODE:
+        if self.mode == glb.CHANGE_MODE:
             return self.get_change_mode_str()
 
         str = self.get_mode_line()
-        if self.mode == globals.HELP:
+        if self.mode == glb.HELP:
             str += self.help_str
         else:
             if stack:
@@ -50,15 +50,15 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     #--------------------------------------------
     def twos_compl(self, val):
         "Return the twos complement of the number"
-        return globals.BIN_MAX_VAL - abs(val) + 1
+        return glb.BIN_MAX_VAL - abs(val) + 1
         return val
 
     #--------------------------------------------
     def print_val(self, val):
         "Return a value as a string, based on the mode we're in"
 
-        if self.mode == globals.PROGRAMMER:
-            base_char = {2: '0%db' % (globals.BIN_MAX_BITS), 8: '0%do' % (globals.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (globals.BIN_MAX_BITS/4)}[self.base]
+        if self.mode == glb.PROGRAMMER:
+            base_char = {2: '0%db' % (glb.BIN_MAX_BITS), 8: '0%do' % (glb.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (glb.BIN_MAX_BITS/4)}[self.base]
             fmt = "{:%s}" % (base_char)
             val = int(val) if val >= 0 else self.twos_compl(int(val))
         else:
@@ -66,7 +66,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         val_str = fmt.format(val)
 
         # Add underscores between nibbles in these modes
-        if self.mode == globals.PROGRAMMER and self.base in (globals.BIN, globals.OCT, globals.HEX) and len(val_str) > 4:
+        if self.mode == glb.PROGRAMMER and self.base in (glb.BIN, glb.OCT, glb.HEX) and len(val_str) > 4:
             vals = []
             while len(val_str):
                 vals.insert(0, val_str[-4:])
@@ -80,21 +80,21 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         "Return the mode line as a string."
 
         # first, the current status fields
-        base_str = {globals.BIN: "BIN", globals.OCT: "OCT", globals.DEC: "DEC", globals.HEX: "HEX"}[self.base] if self.mode == globals.PROGRAMMER else ""
-        mode_str = {globals.BASIC: "BASIC",
-                    globals.PROGRAMMER: "PROGRAMMER",
-                    globals.SCIENTIFIC: "SCIENTIFIC",
-                    globals.STATS: "STATISTICS",
-                    globals.HELP: "HELP",
-                    globals.CHANGE_MODE: "",
+        base_str = {glb.BIN: "BIN", glb.OCT: "OCT", glb.DEC: "DEC", glb.HEX: "HEX"}[self.base] if self.mode == glb.PROGRAMMER else ""
+        mode_str = {glb.BASIC: "BASIC",
+                    glb.PROGRAMMER: "PROGRAMMER",
+                    glb.SCIENTIFIC: "SCIENTIFIC",
+                    glb.STATS: "STATISTICS",
+                    glb.HELP: "HELP",
+                    glb.CHANGE_MODE: "",
                     }[self.mode]
 
         mode_line = self.mode_bar.format(mode_str, base_str) + "\n\n"
 
         # present bit numbers when in binary mode
-        if self.mode == globals.PROGRAMMER and self.base == globals.BIN:
+        if self.mode == glb.PROGRAMMER and self.base == glb.BIN:
             bit_line = "   "
-            for num in range(globals.BIN_MAX_BITS-1, 0, -8):
+            for num in range(glb.BIN_MAX_BITS-1, 0, -8):
                 num_spaces = 8 if num > 7 else 7
                 bit_line += "%d" % num + ' '*num_spaces
             bit_line += "0\n"
@@ -106,7 +106,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     def get_change_mode_str(self):
         "Return the mode lines as a string when changing modes"
 
-        if self.prev_mode == globals.PROGRAMMER:
+        if self.prev_mode == glb.PROGRAMMER:
             bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
             bar_str += self.mode_bar.format("(S)CIENTIFIC", "(D)EC") + '\n'

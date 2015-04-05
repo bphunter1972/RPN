@@ -8,7 +8,7 @@ Press : to change modes.
 import sublime
 import sublime_plugin
 import math
-from . import globals
+from . import RPNGlobals as glb
 from functools import wraps
 
 __author__ = 'Brian Hunter'
@@ -162,21 +162,21 @@ class RPNEvent(sublime_plugin.EventListener):
         self.commands_that_dont_affect_stack = (self.help, self.change_mode, self.undo)
 
         self.legal_commands = {
-            globals.BASIC:      self.basic_commands,
-            globals.PROGRAMMER: self.programmer_commands,
-            globals.SCIENTIFIC: self.scientific_commands,
-            globals.STATS:      self.stats_commands,
+            glb.BASIC:      self.basic_commands,
+            glb.PROGRAMMER: self.programmer_commands,
+            glb.SCIENTIFIC: self.scientific_commands,
+            glb.STATS:      self.stats_commands,
         }
         self.legal_command_groups = {
-            globals.BASIC:      self.basic_commands_group,
-            globals.PROGRAMMER: self.programmer_commands_group,
-            globals.SCIENTIFIC: self.scientific_commands_group,
-            globals.STATS:      self.stats_commands_group,
+            glb.BASIC:      self.basic_commands_group,
+            glb.PROGRAMMER: self.programmer_commands_group,
+            glb.SCIENTIFIC: self.scientific_commands_group,
+            glb.STATS:      self.stats_commands_group,
         }
 
         # Set defaults
-        self.base = globals.DEC
-        self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
+        self.base = glb.DEC
+        self.mode, self.prev_mode = glb.PROGRAMMER, glb.PROGRAMMER
         self.help_str = None
         self.that_was_me = False
         self.edit_region_start = 0
@@ -186,22 +186,22 @@ class RPNEvent(sublime_plugin.EventListener):
         "As as string, return all of the legal digits that can be pressed while in the given modes."
 
         return {
-            globals.BASIC:      '0123456789.',
-            globals.PROGRAMMER: {
-                globals.BIN:    '01',
-                globals.OCT:    '01234567',
-                globals.DEC:    '0123456789',
-                globals.HEX:    '0123456789abcdefABCDEF'
+            glb.BASIC:      '0123456789.',
+            glb.PROGRAMMER: {
+                glb.BIN:    '01',
+                glb.OCT:    '01234567',
+                glb.DEC:    '0123456789',
+                glb.HEX:    '0123456789abcdefABCDEF'
             }[self.base],
-            globals.SCIENTIFIC: '0123456789.ep',
-            globals.STATS:      '0123456789.',
+            glb.SCIENTIFIC: '0123456789.ep',
+            glb.STATS:      '0123456789.',
         }[self.mode]
 
     #--------------------------------------------
     def on_activated_async(self, view):
         "Update the rpn window whenever it is activated"
 
-        if(not self.that_was_me and view.name() == globals.RPN_WINDOW_NAME):
+        if(not self.that_was_me and view.name() == glb.RPN_WINDOW_NAME):
             self.update_rpn(view)
             self.that_was_me = False
 
@@ -209,12 +209,12 @@ class RPNEvent(sublime_plugin.EventListener):
     def on_close(self, view):
         "If the RPN window is closed, re-initialize all values and next time start fresh."
 
-        if(view.name() == globals.RPN_WINDOW_NAME):
+        if(view.name() == glb.RPN_WINDOW_NAME):
             self.__init__()
 
     #--------------------------------------------
     def on_modified(self, view):
-        if(view.name() == globals.RPN_WINDOW_NAME):
+        if(view.name() == glb.RPN_WINDOW_NAME):
             if self.that_was_me:
                 self.that_was_me = False
                 self.edit_region_start = view.size()
@@ -229,11 +229,11 @@ class RPNEvent(sublime_plugin.EventListener):
                 text = view.substr(current_region)
 
                 # if in help mode, then remove the help and re-draw the panel
-                if self.mode == globals.HELP:
+                if self.mode == glb.HELP:
                     self.mode = self.prev_mode
                     self.update_rpn(view)
                     return
-                elif self.mode == globals.CHANGE_MODE:
+                elif self.mode == glb.CHANGE_MODE:
                     # this is if colon (:) was previously pressed
                     try:
                         mode_cmd = self.mode_commands[text]
@@ -332,11 +332,11 @@ class RPNEvent(sublime_plugin.EventListener):
         for arg in args:
             if type(arg) is str:
                 try:
-                    if self.mode == globals.PROGRAMMER:
+                    if self.mode == glb.PROGRAMMER:
                         last_val = int(arg, self.base)
-                    elif self.mode == globals.SCIENTIFIC and arg == 'p':
+                    elif self.mode == glb.SCIENTIFIC and arg == 'p':
                         last_val = math.pi
-                    elif self.mode == globals.SCIENTIFIC and arg == 'e':
+                    elif self.mode == glb.SCIENTIFIC and arg == 'e':
                         last_val = math.e
                     else:
                         last_val = float(arg)
@@ -354,7 +354,7 @@ class RPNEvent(sublime_plugin.EventListener):
             if command not in self.commands_that_dont_affect_stack:
                 self.prev_stack.append(self.stack[:])
             command()
-        except globals.InsufficientStackDepth as exc:
+        except glb.InsufficientStackDepth as exc:
             sublime.error_message("Not enough values for operation:\n{} required, but only {} available.".format(exc.required, len(self.stack)))
 
     #--------------------------------------------
@@ -363,7 +363,7 @@ class RPNEvent(sublime_plugin.EventListener):
             sublime.error_message("Programmer Error, count={}".format(count))
 
         if len(self.stack) < count:
-            raise globals.InsufficientStackDepth(count)
+            raise glb.InsufficientStackDepth(count)
 
         vals = []
         for cnt in range(count):
@@ -374,7 +374,7 @@ class RPNEvent(sublime_plugin.EventListener):
     def pop_all(self):
         "Clears and returns the entire stack"
         if len(self.stack) == 0:
-            raise globals.InsufficientStackDepth()
+            raise glb.InsufficientStackDepth()
 
         vals = self.stack[:]
         self.stack = []
@@ -388,7 +388,7 @@ class RPNEvent(sublime_plugin.EventListener):
         "Press : to change calculator modes and bases."
 
         self.prev_mode = self.mode
-        self.mode = globals.CHANGE_MODE
+        self.mode = glb.CHANGE_MODE
 
     #--------------------------------------------
     def quit_change_mode(self):
@@ -399,10 +399,10 @@ class RPNEvent(sublime_plugin.EventListener):
     #--------------------------------------------
     def help(self):
         "Displays this help screen."
-        if self.mode != globals.HELP:
+        if self.mode != glb.HELP:
             self.prev_mode = self.mode
             self.help_str = self.gen_help_str()
-        self.mode = globals.HELP
+        self.mode = glb.HELP
 
     #--------------------------------------------
     def undo(self):
@@ -517,7 +517,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def not_func(self, vals):
         "Bitwise NOT: ~x"
-        mask = int('1' * globals.BIN_MAX_BITS, base=2)
+        mask = int('1' * glb.BIN_MAX_BITS, base=2)
         return(~int(vals[0]) & mask)
 
     ########################################################################################
@@ -601,43 +601,43 @@ class RPNEvent(sublime_plugin.EventListener):
     #--------------------------------------------
     def mode_basic(self):
         "Changes to the basic mode"
-        self.mode = globals.BASIC
+        self.mode = glb.BASIC
 
     #--------------------------------------------
     def mode_programmer(self):
         "Changes to the programmer mode"
-        self.mode = globals.PROGRAMMER
+        self.mode = glb.PROGRAMMER
 
     #--------------------------------------------
     def mode_scientific(self):
         "Changes to the scientific mode"
-        self.mode = globals.SCIENTIFIC
+        self.mode = glb.SCIENTIFIC
 
     #--------------------------------------------
     def mode_stats(self):
         "Changes to the statistical mode"
-        self.mode = globals.STATS
+        self.mode = glb.STATS
 
     #--------------------------------------------
     def decimal(self):
         "Changes base to decimal"
         self.mode = self.prev_mode
-        self.base = globals.DEC
+        self.base = glb.DEC
 
     #--------------------------------------------
     def octal(self):
         "Changes base to octal"
         self.mode = self.prev_mode
-        self.base = globals.OCT
+        self.base = glb.OCT
 
     #--------------------------------------------
     def hexadecimal(self):
         "Changes base to hexadecimal"
         self.mode = self.prev_mode
-        self.base = globals.HEX
+        self.base = glb.HEX
 
     #--------------------------------------------
     def binary(self):
         "Changes base to binary"
         self.mode = self.prev_mode
-        self.base = globals.BIN
+        self.base = glb.BIN
