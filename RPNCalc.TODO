@@ -3,6 +3,7 @@ Interface
  ✘ Put the rpn window down at the lower 1/4th of the window. @cancelled (15-03-27 22:23)
  ✔ Right-shift values to widest...binary only? @done (15-04-01 14:29)
  ✔ Remove input panel and just use output panel. @done (15-03-31 16:41)
+ ☐ Negative numbers
 Stack
  ☐ Command to use previous values in the stack
  ✔ Flip last two values in the stack @done (15-03-30 16:34)
@@ -12,13 +13,17 @@ Modes
  ✔ Add basic functions, float, etc. @done (15-03-31 16:42)
  ✔ Set off status bar with different colors? @done (15-03-27 22:23)
  ✔ Add modulo function @done (15-03-31 17:12)
- Scientific
-   ☐ Add scientific functions (sin, cos, tan, etc.)
-   ☐ Make precision (SCI) a setting.
- Binary
-   ☐ Make BIN_MAX_BITS a setting.
-   ☐ Create a function which displays the value of a field of bits
-
+Scientific
+ ☐ Add scientific functions (sin, cos, tan, etc.)
+ ☐ Make precision (SCI) a setting.
+Binary
+ ☐ Make BIN_MAX_BITS a setting.
+ ☐ Create a function which displays the value of a field of bits
+Programmer
+ ☐ Negative numbers
+Statistical Mode
+ ☐ Create statistical mode.     
+ ☐ Add sum, avg, mean, 
 Help
  ✔ Groups of help functions @done (15-04-04 22:10)
  ✘ Columnize @cancelled (15-04-04 22:10)
