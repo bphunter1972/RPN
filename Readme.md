@@ -35,18 +35,17 @@ entire stack at once.
 
 ## Installation
 
-Installation
+* Using Package Control, install "RPN"
 
-Using Package Control, install "RPN"
 Or:
 
-Open the Sublime Text Packages folder
+* Open the Sublime Text Packages folder
 
-OS X: ~/Library/Application Support/Sublime Text 3/Packages/
-Windows: %APPDATA%/Sublime Text 3/Packages/
-Linux: ~/.Sublime Text 3/Packages/ or ~/.config/sublime-text-3/Packages
+** OS X: ~/Library/Application Support/Sublime Text 3/Packages/
+** Windows: %APPDATA%/Sublime Text 3/Packages/
+** Linux: ~/.Sublime Text 3/Packages/ or ~/.config/sublime-text-3/Packages
 
-clone this repo
+* Clone this repository
 
 ## Help
 
