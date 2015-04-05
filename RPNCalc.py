@@ -182,9 +182,20 @@ class RPNEvent(sublime_plugin.EventListener):
         """
 
         try:
-            key = text[-1]
+            key_pressed = text[-1]
         except IndexError:
             return
+
+        legal_digits = {
+            globals.BASIC:      '0123456789.',
+            globals.PROGRAMMER: {
+                globals.BIN:    '01',
+                globals.OCT:    '01234567',
+                globals.DEC:    '0123456789',
+                globals.HEX:    '0123456789abcdefABCDEF'
+            }[self.base],
+            globals.SCIENTIFIC: '0123456789.'
+        }[self.mode]
 
         legal_commands = {
             globals.BASIC:      self.basic_commands,
@@ -193,18 +204,23 @@ class RPNEvent(sublime_plugin.EventListener):
         }[self.mode]
 
         args = None
-        if key in legal_commands.keys():
+        if key_pressed in legal_digits:
+            return
+        elif key_pressed in legal_commands.keys():
             if len(text) > 1:
                 args = text[:-1], legal_commands[text[-1]]
             else:
                 args = (legal_commands[text[-1]], )
-        elif key == '\n':
+        elif key_pressed in ' \n':
             # if only whitespace, then ignore
             text = text.strip()
             if not text:
                 self.update_rpn(view)
                 return
             args = (text,)
+        else:
+            sublime.error_message("Illegal digit or command {}".format(key_pressed))
+            return
 
         if args is not None:
             self.process(args)
