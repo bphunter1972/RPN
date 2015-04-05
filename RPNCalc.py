@@ -55,6 +55,7 @@ class RPNEvent(sublime_plugin.EventListener):
             'U': self.undo,
             'C': self.clear_stack,
             'S': self.swap_stack,
+            'x': self.pop_last_value,
             '?': self.help,
             ':': self.change_mode,
         }
@@ -108,6 +109,12 @@ class RPNEvent(sublime_plugin.EventListener):
 
         self.commands_that_dont_affect_stack = (self.help, self.change_mode)
 
+        self.legal_commands = {
+            globals.BASIC:      self.basic_commands,
+            globals.PROGRAMMER: self.programmer_commands,
+            globals.SCIENTIFIC: self.scientific_commands
+        }
+
         # Set defaults
         self.base = globals.DEC
         self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
@@ -116,13 +123,16 @@ class RPNEvent(sublime_plugin.EventListener):
         self.edit_region_start = 0
 
     #--------------------------------------------
-    def get_legal_commands(self):
+    def get_legal_digits(self):
         return {
-            globals.BASIC:       self.basic_commands,
-            globals.PROGRAMMER:  self.programmer_commands,
-            globals.SCIENTIFIC:  self.scientific_commands,
-            globals.HELP:        None,  # self.all_commands,
-            globals.CHANGE_MODE: self.mode_commands
+            globals.BASIC:      '0123456789.',
+            globals.PROGRAMMER: {
+                globals.BIN:    '01',
+                globals.OCT:    '01234567',
+                globals.DEC:    '0123456789',
+                globals.HEX:    '0123456789abcdefABCDEF'
+            }[self.base],
+            globals.SCIENTIFIC: '0123456789.'
         }[self.mode]
 
     #--------------------------------------------
@@ -186,31 +196,15 @@ class RPNEvent(sublime_plugin.EventListener):
         except IndexError:
             return
 
-        legal_digits = {
-            globals.BASIC:      '0123456789.',
-            globals.PROGRAMMER: {
-                globals.BIN:    '01',
-                globals.OCT:    '01234567',
-                globals.DEC:    '0123456789',
-                globals.HEX:    '0123456789abcdefABCDEF'
-            }[self.base],
-            globals.SCIENTIFIC: '0123456789.'
-        }[self.mode]
-
-        legal_commands = {
-            globals.BASIC:      self.basic_commands,
-            globals.PROGRAMMER: self.programmer_commands,
-            globals.SCIENTIFIC: self.scientific_commands
-        }[self.mode]
-
         args = None
-        if key_pressed in legal_digits:
+        current_legal_commands = self.legal_commands[self.mode]
+        if key_pressed in self.get_legal_digits():
             return
-        elif key_pressed in legal_commands.keys():
+        elif key_pressed in current_legal_commands.keys():
             if len(text) > 1:
-                args = text[:-1], legal_commands[text[-1]]
+                args = text[:-1], current_legal_commands[text[-1]]
             else:
-                args = (legal_commands[text[-1]], )
+                args = (current_legal_commands[text[-1]], )
         elif key_pressed in ' \n':
             # if only whitespace, then ignore
             text = text.strip()
@@ -241,10 +235,10 @@ class RPNEvent(sublime_plugin.EventListener):
         "Returns the help string based on all of the available commands"
 
         h_txt = "{:^30}\n\n".format("RPN Commands")
-        legal_commands = self.get_legal_commands()
-        command_keys = sorted(legal_commands.keys())
+        current_legal_commands = self.legal_commands[self.mode]
+        command_keys = sorted(current_legal_commands.keys())
         for key in command_keys:
-            cmd = legal_commands[key]
+            cmd = current_legal_commands[key]
             h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
         h_txt += "\n{:^30}".format("Any key to exit.")
         return h_txt
@@ -253,7 +247,7 @@ class RPNEvent(sublime_plugin.EventListener):
     def convert_text_to_args(self, text):
         "Convert the text from the input panel into a list of arguments, working back-to-front."
         text_args = []
-        while len(text) and text[-1] in self.get_legal_commands().keys():
+        while len(text) and text[-1] in self.legal_commands[self.mode].keys():
             text_args.insert(0, text[-1])
             text = text[:-1]
         if text:
@@ -424,7 +418,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def undo(self):
-        "Retrieves previous stack"
+        "Undo: Retrieves previous stack"
 
         if len(self.prev_stack) == 0:
             sublime.error_message("No previous stack available.")
@@ -444,6 +438,12 @@ class RPNEvent(sublime_plugin.EventListener):
 
         x, y = self.pop_values(2)
         self.stack.extend([x, y])
+
+    #--------------------------------------------
+    def pop_last_value(self):
+        "Pops the last value from the stack and discards it"
+
+        self.pop_values(1)
 
     #--------------------------------------------
     def mode_basic(self):
