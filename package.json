@@ -1,13 +1,13 @@
 {
-  "name": "RPN",
-  "description": "Interactive RPN Calculator with basic, programmer, scientific, and statistical modes.",
-  "author": "Brian P. Hunter (bphunter1972)",
-  "details": "https://github.com/bphunter1972/RPN",
-  "labels": ["rpn", "calculator"],
-  "releases": [
-    {
-      "details": "https://github.com/bphunter1972/RPN/tags",
-      "sublime_text": ">=3000"
-    }
-  ]
+    "name": "RPN",
+    "description": "Interactive RPN Calculator with basic, programmer, scientific, and statistical modes.",
+    "author": "Brian Hunter (bphunter1972)",
+    "details": "https://github.com/bphunter1972/RPN",
+    "labels": ["rpn", "calculator"],
+    "releases": [
+        {
+            "tags": "true",
+            "sublime_text": ">=3000"
+        }
+    ]
 }
