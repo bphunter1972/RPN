@@ -39,11 +39,11 @@ entire stack at once.
 
 Or:
 
-* Open the Sublime Text Packages folder
+* Open the Sublime Text Packages folder:
 
-** OS X: ~/Library/Application Support/Sublime Text 3/Packages/
-** Windows: %APPDATA%/Sublime Text 3/Packages/
-** Linux: ~/.Sublime Text 3/Packages/ or ~/.config/sublime-text-3/Packages
+  * OS X: ~/Library/Application Support/Sublime Text 3/Packages/
+  * Windows: %APPDATA%/Sublime Text 3/Packages/
+  * Linux: ~/.Sublime Text 3/Packages/ or ~/.config/sublime-text-3/Packages
 
 * Clone this repository
 
