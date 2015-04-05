@@ -3,7 +3,7 @@ Interface
  ✘ Put the rpn window down at the lower 1/4th of the window. @cancelled (15-03-27 22:23)
  ✔ Right-shift values to widest...binary only? @done (15-04-01 14:29)
  ✔ Remove input panel and just use output panel. @done (15-03-31 16:41)
- ☐ Negative numbers
+ ✔ Negative numbers @done (15-04-05 11:21)
 Stack
  ☐ Command to use previous values in the stack
  ✔ Flip last two values in the stack @done (15-03-30 16:34)
@@ -20,7 +20,7 @@ Binary
  ☐ Make BIN_MAX_BITS a setting.
  ☐ Create a function which displays the value of a field of bits
 Programmer
- ☐ Negative numbers
+ ✔ Negative numbers @done (15-04-05 11:21)
 Statistical Mode
  ☐ Create statistical mode.     
  ☐ Add sum, avg, mean, 

@@ -89,6 +89,7 @@ class RPNEvent(sublime_plugin.EventListener):
             '*': self.multiply,
             '/': self.divide,
             '%': self.modulo,
+            'n': self.negate,
         }
 
         programmer_cmds = {
@@ -440,6 +441,13 @@ class RPNEvent(sublime_plugin.EventListener):
     def modulo(self, vals):
         "Calculates the remainder of x/y"
         return vals[1] % vals[0]
+
+    #--------------------------------------------
+    @pop_vals(1)
+    @handle_exc
+    def negate(self, vals):
+        "Negate: Negate the current value: -x"
+        return -vals[0]
 
     ########################################################################################
     # Programmer Commands

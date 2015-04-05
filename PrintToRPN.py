@@ -48,17 +48,24 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         return str
 
     #--------------------------------------------
+    def twos_compl(self, val):
+        "Return the twos complement of the number"
+        return globals.BIN_MAX_VAL - abs(val) + 1
+        return val
+
+    #--------------------------------------------
     def print_val(self, val):
         "Return a value as a string, based on the mode we're in"
 
         if self.mode == globals.PROGRAMMER:
             base_char = {2: '0%db' % (globals.BIN_MAX_BITS), 8: '0%do' % (globals.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (globals.BIN_MAX_BITS/4)}[self.base]
             fmt = "{:%s}" % (base_char)
-            val = int(val)
+            val = int(val) if val >= 0 else self.twos_compl(int(val))
         else:
             fmt = "{:g}"
         val_str = fmt.format(val)
 
+        # Add underscores between nibbles in these modes
         if self.mode == globals.PROGRAMMER and self.base in (globals.BIN, globals.OCT, globals.HEX) and len(val_str) > 4:
             vals = []
             while len(val_str):
@@ -97,7 +104,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
     #--------------------------------------------
     def get_change_mode_str(self):
         "Return the mode lines as a string when changing modes"
-        
+
         if self.prev_mode == globals.PROGRAMMER:
             bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
