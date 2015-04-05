@@ -1,5 +1,4 @@
 [
-    // RPN
     { "keys": ["ctrl+alt+c"], "command": "rpn" }
 ]
 
