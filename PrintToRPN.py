@@ -84,6 +84,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         mode_str = {globals.BASIC: "BASIC",
                     globals.PROGRAMMER: "PROGRAMMER",
                     globals.SCIENTIFIC: "SCIENTIFIC",
+                    globals.STATS: "STATISTICS",
                     globals.HELP: "HELP",
                     globals.CHANGE_MODE: "",
                     }[self.mode]
@@ -109,10 +110,11 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
             bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
             bar_str += self.mode_bar.format("(S)CIENTIFIC", "(D)EC") + '\n'
-            bar_str += self.mode_bar.format("",             "(H)EX") + '\n'
+            bar_str += self.mode_bar.format("(s)TATISTICS", "(H)EX") + '\n'
         else:
             bar_str  = self.mode_bar.format("(b)ASIC",      "") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "") + '\n'
             bar_str += self.mode_bar.format("(S)CIENTIFIC", "") + '\n'
+            bar_str += self.mode_bar.format("(s)TATISTICS", "") + '\n'
 
         return bar_str

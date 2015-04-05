@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 import math
 from . import globals
+from functools import wraps
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
@@ -15,13 +16,22 @@ __version__ = '0.1'
 # Decorators
 def pop_vals(pop_num):
     def pop_dec(func):
+        @wraps(func)
         def wrapper(self):
             vals = self.pop_values(pop_num)
             func(self, vals)
         return wrapper
     return pop_dec
 
+def pop_all_vals(func):
+    @wraps(func)
+    def wrapper(self):
+        vals = self.pop_all()
+        func(self, vals)
+    return wrapper
+
 def handle_exc(func):
+    @wraps(func)
     def wrapper(self, vals):
         try:
             result = func(self, vals)
@@ -32,6 +42,7 @@ def handle_exc(func):
     return wrapper
 
 def handle_exc_undo(func):
+    @wraps(func)
     def wrapper(self, vals):
         try:
             self.stack.append(func(self, vals))
@@ -39,7 +50,6 @@ def handle_exc_undo(func):
             sublime.error_message("math error: {}".format(exc))
             self.undo()
     return wrapper
-
 
 ########################################################################################
 class RpnCommand(sublime_plugin.WindowCommand):
@@ -110,6 +120,12 @@ class RPNEvent(sublime_plugin.EventListener):
             'L': self.logn,
         }
 
+        stats_cmds = {
+            's': self.sum,
+            'a': self.avg,
+            'm': self.median,
+        }
+
         self.mode_commands = {
             'D': self.decimal,
             'H': self.hexadecimal,
@@ -118,6 +134,7 @@ class RPNEvent(sublime_plugin.EventListener):
             'b': self.mode_basic,
             'P': self.mode_programmer,
             'S': self.mode_scientific,
+            's': self.mode_stats,
             ':': self.quit_change_mode
         }
 
@@ -147,6 +164,15 @@ class RPNEvent(sublime_plugin.EventListener):
                                           ('Scientific Commands', scientific_cmds),
                                           )
 
+        self.stats_commands = {}
+        self.stats_commands.update(fundamental_cmds)
+        self.stats_commands.update(basic_cmds)
+        self.stats_commands.update(stats_cmds)
+        self.stats_commands_group = (('Fundamental Commands', fundamental_cmds),
+                                     ('Basic Commands', basic_cmds),
+                                     ('Statistical Commands', stats_cmds),
+                                     )
+
         # yes, undo affects the stack. But if it's not in this tuple, then it will
         # not work because it would push the current stack onto prev_stack before popping
         self.commands_that_dont_affect_stack = (self.help, self.change_mode, self.undo)
@@ -154,12 +180,14 @@ class RPNEvent(sublime_plugin.EventListener):
         self.legal_commands = {
             globals.BASIC:      self.basic_commands,
             globals.PROGRAMMER: self.programmer_commands,
-            globals.SCIENTIFIC: self.scientific_commands
+            globals.SCIENTIFIC: self.scientific_commands,
+            globals.STATS:      self.stats_commands,
         }
         self.legal_command_groups = {
             globals.BASIC:      self.basic_commands_group,
             globals.PROGRAMMER: self.programmer_commands_group,
-            globals.SCIENTIFIC: self.scientific_commands_group
+            globals.SCIENTIFIC: self.scientific_commands_group,
+            globals.STATS:      self.stats_commands_group,
         }
 
         # Set defaults
@@ -181,7 +209,8 @@ class RPNEvent(sublime_plugin.EventListener):
                 globals.DEC:    '0123456789',
                 globals.HEX:    '0123456789abcdefABCDEF'
             }[self.base],
-            globals.SCIENTIFIC: '0123456789.ep'
+            globals.SCIENTIFIC: '0123456789.ep',
+            globals.STATS:      '0123456789.',
         }[self.mode]
 
     #--------------------------------------------
@@ -291,6 +320,8 @@ class RPNEvent(sublime_plugin.EventListener):
         command_groups = self.legal_command_groups[self.mode]
         for group_name, group in command_groups:
             command_keys = sorted(group.keys())
+            print(group_name, command_keys)
+            print(group[command_keys[0]].__doc__)
             h_txt += "{:<30}\n".format(group_name)
             for key in command_keys:
                 cmd = group[key]
@@ -353,6 +384,16 @@ class RPNEvent(sublime_plugin.EventListener):
         vals = []
         for cnt in range(count):
             vals.append(self.stack.pop())
+        return vals
+
+    #--------------------------------------------
+    def pop_all(self):
+        "Clears and returns the entire stack"
+        if len(self.stack) == 0:
+            raise globals.InsufficientStackDepth()
+
+        vals = self.stack[:]
+        self.stack = []
         return vals
 
     ########################################################################################
@@ -541,6 +582,36 @@ class RPNEvent(sublime_plugin.EventListener):
         return math.sqrt(vals[0])
 
     ########################################################################################
+    # Statistical Commands
+
+    #--------------------------------------------
+    @pop_all_vals
+    @handle_exc
+    def sum(self, vals):
+        "Sum: Returns the sum of all values in the stack."
+        return sum(vals)
+
+    #--------------------------------------------
+    @pop_all_vals
+    @handle_exc
+    def avg(self, vals):
+        "Average/Mean: Returns the mean of all values in the stack."
+        return sum(vals)/len(vals)
+
+    #--------------------------------------------
+    @pop_all_vals
+    @handle_exc
+    def median(self, vals):
+        "Median: Returns the median of all values in the stack."
+        vals = sorted(vals)
+        midpoint = int((len(vals)+1)/2)
+        if len(vals) % 2 == 0:
+            x, y = vals[midpoint], vals[midpoint-1]
+            return (x+y)/2
+        else:
+            return vals[midpoint-1]
+
+    ########################################################################################
     # Modes
 
     #--------------------------------------------
@@ -557,6 +628,11 @@ class RPNEvent(sublime_plugin.EventListener):
     def mode_scientific(self):
         "Changes to the scientific mode"
         self.mode = globals.SCIENTIFIC
+
+    #--------------------------------------------
+    def mode_stats(self):
+        "Changes to the statistical mode"
+        self.mode = globals.STATS
 
     #--------------------------------------------
     def decimal(self):
