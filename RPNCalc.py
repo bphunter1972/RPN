@@ -1,6 +1,9 @@
-# """
-# An RPN Calculator
-# """
+"""
+An RPN Calculator with Basic, Programmer, Scientific, and Statistical modes.
+
+Press ? for help
+Press : to change modes.
+"""
 
 import sublime
 import sublime_plugin
@@ -50,25 +53,6 @@ def handle_exc_undo(func):
             sublime.error_message("math error: {}".format(exc))
             self.undo()
     return wrapper
-
-########################################################################################
-class RpnCommand(sublime_plugin.WindowCommand):
-    "Launches the rpn view"
-
-    #--------------------------------------------
-    def run(self):
-        self.opanel = None
-        for aview in self.window.views():
-            if aview.name() == globals.RPN_WINDOW_NAME:
-                self.opanel = aview
-                break
-
-        if self.opanel is None:
-            self.opanel = self.window.new_file()
-            self.opanel.set_name(globals.RPN_WINDOW_NAME)
-            self.opanel.set_scratch(True)
-
-        self.window.focus_view(self.opanel)
 
 ########################################################################################
 class RPNEvent(sublime_plugin.EventListener):
