@@ -46,10 +46,9 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
         if self.mode == globals.PROGRAMMER:
             base_char = {2: '0%db' % (globals.BIN_MAX_BITS), 8: '0%do' % (globals.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (globals.BIN_MAX_BITS/4)}[self.base]
             fmt = "{:%s}" % (base_char)
+            val = int(val)
         else:
             fmt = "{:g}"
-        if self.mode == globals.PROGRAMMER:
-            val = int(val)
         val_str = fmt.format(val)
 
         if self.mode == globals.PROGRAMMER and self.base in (globals.BIN, globals.OCT, globals.HEX) and len(val_str) > 4:
