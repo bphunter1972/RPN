@@ -25,4 +25,5 @@ Help
 
 Miscellaneous
  ☐ Separate math functions into different file?
- ☐ 
+ ☐ Add error text below mode bar instead of sublime error messages.
+   
