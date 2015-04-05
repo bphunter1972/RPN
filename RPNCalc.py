@@ -40,13 +40,6 @@ def handle_exc_undo(func):
             self.undo()
     return wrapper
 
-########################################################################################
-class InsufficientStackDepth(Exception):
-    "Raised when a command requires more values than are on the stack."
-
-    def __init__(self, required):
-        self.required = required
-
 
 ########################################################################################
 class RpnCommand(sublime_plugin.WindowCommand):
@@ -72,6 +65,8 @@ class RPNEvent(sublime_plugin.EventListener):
     "Handles all the work for RPN"
 
     def __init__(self):
+        "Initial set-up"
+
         super(RPNEvent, self).__init__()
 
         self.opanel = None
@@ -130,7 +125,8 @@ class RPNEvent(sublime_plugin.EventListener):
         self.basic_commands.update(fundamental_cmds)
         self.basic_commands.update(basic_cmds)
         self.basic_commands_group = (('Fundamental Commands', fundamental_cmds),
-                                     ('Basic Commands', basic_cmds))
+                                     ('Basic Commands', basic_cmds),
+                                     )
 
         self.programmer_commands = {}
         self.programmer_commands.update(fundamental_cmds)
@@ -138,7 +134,8 @@ class RPNEvent(sublime_plugin.EventListener):
         self.programmer_commands.update(programmer_cmds)
         self.programmer_commands_group = (('Fundamental Commands', fundamental_cmds),
                                           ('Basic Commands', basic_cmds),
-                                          ('Programmer Commands', programmer_cmds))
+                                          ('Programmer Commands', programmer_cmds),
+                                          )
 
         self.scientific_commands = {}
         self.scientific_commands.update(fundamental_cmds)
@@ -146,7 +143,8 @@ class RPNEvent(sublime_plugin.EventListener):
         self.scientific_commands.update(scientific_cmds)
         self.scientific_commands_group = (('Fundamental Commands', fundamental_cmds),
                                           ('Basic Commands', basic_cmds),
-                                          ('Scientific Commands', scientific_cmds))
+                                          ('Scientific Commands', scientific_cmds),
+                                          )
 
         # yes, undo affects the stack. But if it's not in this tuple, then it will
         # not work because it would push the current stack onto prev_stack before popping
@@ -162,6 +160,7 @@ class RPNEvent(sublime_plugin.EventListener):
             globals.PROGRAMMER: self.programmer_commands_group,
             globals.SCIENTIFIC: self.scientific_commands_group
         }
+
         # Set defaults
         self.base = globals.DEC
         self.mode, self.prev_mode = globals.PROGRAMMER, globals.PROGRAMMER
@@ -171,6 +170,8 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def get_legal_digits(self):
+        "As as string, return all of the legal digits that can be pressed while in the given modes."
+
         return {
             globals.BASIC:      '0123456789.',
             globals.PROGRAMMER: {
@@ -184,12 +185,16 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def on_activated_async(self, view):
+        "Update the rpn window whenever it is activated"
+
         if(not self.that_was_me and view.name() == globals.RPN_WINDOW_NAME):
             self.update_rpn(view)
             self.that_was_me = False
 
     #--------------------------------------------
     def on_close(self, view):
+        "If the RPN window is closed, re-initialize all values and next time start fresh."
+
         if(view.name() == globals.RPN_WINDOW_NAME):
             self.__init__()
 
@@ -333,7 +338,7 @@ class RPNEvent(sublime_plugin.EventListener):
             if command not in self.commands_that_dont_affect_stack:
                 self.prev_stack.append(self.stack[:])
             command()
-        except InsufficientStackDepth as exc:
+        except globals.InsufficientStackDepth as exc:
             sublime.error_message("Not enough values for operation:\n{} required, but only {} available.".format(exc.required, len(self.stack)))
 
     #--------------------------------------------
@@ -342,12 +347,15 @@ class RPNEvent(sublime_plugin.EventListener):
             sublime.error_message("Programmer Error, count={}".format(count))
 
         if len(self.stack) < count:
-            raise InsufficientStackDepth(count)
+            raise globals.InsufficientStackDepth(count)
 
         vals = []
         for cnt in range(count):
             vals.append(self.stack.pop())
         return vals
+
+    ########################################################################################
+    # Fundamental Commands
 
     #--------------------------------------------
     def change_mode(self):
@@ -361,6 +369,42 @@ class RPNEvent(sublime_plugin.EventListener):
         "Press : again to exit change mode."
 
         self.mode = self.prev_mode
+
+    #--------------------------------------------
+    def help(self):
+        "Displays this help screen."
+        if self.mode != globals.HELP:
+            self.prev_mode = self.mode
+            self.help_str = self.gen_help_str()
+        self.mode = globals.HELP
+
+    #--------------------------------------------
+    def undo(self):
+        "Undo: Retrieves previous stack"
+        if len(self.prev_stack) == 0:
+            sublime.error_message("No previous stack available.")
+            return
+
+        self.stack = self.prev_stack.pop()
+
+    #--------------------------------------------
+    def clear_stack(self):
+        "Clears the stack"
+        self.stack = []
+
+    #--------------------------------------------
+    @pop_vals(2)
+    def swap_stack(self, vals):
+        "Swaps the last two values on the stack"
+        self.stack.extend([vals[0], vals[1]])
+
+    #--------------------------------------------
+    def pop_last_value(self):
+        "Pops the last value from the stack and discards it"
+        self.pop_values(1)
+
+    ########################################################################################
+    # Basic Commands
 
     #--------------------------------------------
     @pop_vals(2)
@@ -397,13 +441,8 @@ class RPNEvent(sublime_plugin.EventListener):
         "Calculates the remainder of x/y"
         return vals[1] % vals[0]
 
-    #--------------------------------------------
-    def help(self):
-        "Displays this help screen."
-        if self.mode != globals.HELP:
-            self.prev_mode = self.mode
-            self.help_str = self.gen_help_str()
-        self.mode = globals.HELP
+    ########################################################################################
+    # Programmer Commands
 
     #--------------------------------------------
     @pop_vals(1)
@@ -448,6 +487,9 @@ class RPNEvent(sublime_plugin.EventListener):
         mask = int('1' * globals.BIN_MAX_BITS, base=2)
         return(~int(vals[0]) & mask)
 
+    ########################################################################################
+    # Scientific Commands
+
     #--------------------------------------------
     @pop_vals(2)
     @handle_exc
@@ -490,30 +532,8 @@ class RPNEvent(sublime_plugin.EventListener):
         "Square root: Compute sqrt(x)"
         return math.sqrt(vals[0])
 
-    #--------------------------------------------
-    def undo(self):
-        "Undo: Retrieves previous stack"
-        if len(self.prev_stack) == 0:
-            sublime.error_message("No previous stack available.")
-            return
-
-        self.stack = self.prev_stack.pop()
-
-    #--------------------------------------------
-    def clear_stack(self):
-        "Clears the stack"
-        self.stack = []
-
-    #--------------------------------------------
-    @pop_vals(2)
-    def swap_stack(self, vals):
-        "Swaps the last two values on the stack"
-        self.stack.extend([vals[0], vals[1]])
-
-    #--------------------------------------------
-    def pop_last_value(self):
-        "Pops the last value from the stack and discards it"
-        self.pop_values(1)
+    ########################################################################################
+    # Modes
 
     #--------------------------------------------
     def mode_basic(self):

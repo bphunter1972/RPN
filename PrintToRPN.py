@@ -4,6 +4,8 @@ from . import globals
 
 ########################################################################################
 class PrintToRpnCommand(sublime_plugin.TextCommand):
+    "This command re-draws the RPN window whenever a change is made"
+
     base = None
     mode_bar = ".....{:.<15s}...{:.>5s}......"
 
@@ -21,11 +23,15 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def erase_buffer(self, edit):
+        "Erase the RPN window"
+
         region = sublime.Region(0, self.view.size())
         self.view.erase(edit, region)
 
     #--------------------------------------------
     def get_rpn_txt(self, stack):
+        "Return the string of text that will fill the RPN window"
+
         if self.mode == globals.CHANGE_MODE:
             return self.get_change_mode_str()
 
@@ -43,6 +49,8 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def print_val(self, val):
+        "Return a value as a string, based on the mode we're in"
+
         if self.mode == globals.PROGRAMMER:
             base_char = {2: '0%db' % (globals.BIN_MAX_BITS), 8: '0%do' % (globals.BIN_MAX_BITS/3), 10: 'd', 16: '0%dX' % (globals.BIN_MAX_BITS/4)}[self.base]
             fmt = "{:%s}" % (base_char)
@@ -62,6 +70,8 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def get_mode_line(self):
+        "Return the mode line as a string."
+
         # first, the current status fields
         base_str = {globals.BIN: "BIN", globals.OCT: "OCT", globals.DEC: "DEC", globals.HEX: "HEX"}[self.base] if self.mode == globals.PROGRAMMER else ""
         mode_str = {globals.BASIC: "BASIC",
@@ -86,6 +96,8 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
 
     #--------------------------------------------
     def get_change_mode_str(self):
+        "Return the mode lines as a string when changing modes"
+        
         if self.prev_mode == globals.PROGRAMMER:
             bar_str  = self.mode_bar.format("(b)ASIC",      "(B)IN") + '\n'
             bar_str += self.mode_bar.format("(P)ROGRAMMER", "(O)CT") + '\n'
