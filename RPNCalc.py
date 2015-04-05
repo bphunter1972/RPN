@@ -11,6 +11,34 @@ __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
 __version__ = '0.1'
 
+########################################################################################
+# Decorators
+def pop_vals(pop_num):
+    def pop_dec(func):
+        def wrapper(self):
+            vals = self.pop_values(pop_num)
+            func(self, vals)
+        return wrapper
+    return pop_dec
+
+def handle_exc(func):
+    def wrapper(self, vals):
+        try:
+            result = func(self, vals)
+        except Exception as exp:
+            sublime.error_message("math error: {}".format(exp))
+        else:
+            self.stack.append(result)
+    return wrapper
+
+def handle_exc_undo(func):
+    def wrapper(self, vals):
+        try:
+            self.stack.append(func(self, vals))
+        except Exception as exc:
+            sublime.error_message("math error: {}".format(exc))
+            self.undo()
+    return wrapper
 
 ########################################################################################
 class InsufficientStackDepth(Exception):
@@ -335,177 +363,136 @@ class RPNEvent(sublime_plugin.EventListener):
         self.mode = self.prev_mode
 
     #--------------------------------------------
-    def add(self):
+    @pop_vals(2)
+    @handle_exc
+    def add(self, vals):
         "Adds x+y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[0]+vals[1])
+        return vals[0]+vals[1]
 
     #--------------------------------------------
-    def subtract(self):
+    @pop_vals(2)
+    @handle_exc
+    def subtract(self, vals):
         "Subtracts x-y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[1]-vals[0])
+        return vals[1]-vals[0]
 
     #--------------------------------------------
-    def multiply(self):
+    @pop_vals(2)
+    @handle_exc
+    def multiply(self, vals):
         "Multiplies x*y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[1]*vals[0])
+        return vals[1]*vals[0]
 
     #--------------------------------------------
-    def divide(self):
+    @pop_vals(2)
+    @handle_exc_undo
+    def divide(self, vals):
         "Divides x/y"
-
-        vals = self.pop_values(2)
-        try:
-            self.stack.append(vals[1]/vals[0])
-        except ZeroDivisionError:
-            sublime.error_message("Unable to divide by zero")
-            self.undo()
+        return vals[1]/vals[0]
 
     #--------------------------------------------
-    def modulo(self):
+    @pop_vals(2)
+    @handle_exc_undo
+    def modulo(self, vals):
         "Calculates the remainder of x/y"
-
-        vals = self.pop_values(2)
-        try:
-            self.stack.append(vals[1] % vals[0])
-        except ZeroDivisionError:
-            sublime.error_message("Unable to divide by zero")
-            self.undo()
+        return vals[1] % vals[0]
 
     #--------------------------------------------
     def help(self):
         "Displays this help screen."
-
         if self.mode != globals.HELP:
             self.prev_mode = self.mode
             self.help_str = self.gen_help_str()
         self.mode = globals.HELP
 
     #--------------------------------------------
-    def shift_left(self):
+    @pop_vals(1)
+    @handle_exc
+    def shift_left(self, vals):
         "Shift left: x << 1"
-
-        vals = self.pop_values(1)
-        self.stack.append(vals[0]*2)
+        return vals[0]*2
 
     #--------------------------------------------
-    def shift_right(self):
+    @pop_vals(1)
+    @handle_exc
+    def shift_right(self, vals):
         "Shift right: x >> 1"
-
-        vals = self.pop_values(1)
-        self.stack.append(vals[0]/2)
+        return vals[0]/2
 
     #--------------------------------------------
-    def or_func(self):
+    @pop_vals(2)
+    @handle_exc
+    def or_func(self, vals):
         "Bitwise OR: x | y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[1] | vals[0])
+        return vals[1] | vals[0]
 
     #--------------------------------------------
-    def and_func(self):
+    @pop_vals(2)
+    @handle_exc
+    def and_func(self, vals):
         "Bitwise AND: x & y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[1] & vals[0])
+        return vals[1] & vals[0]
 
     #--------------------------------------------
-    def xor(self):
+    @pop_vals(2)
+    @handle_exc
+    def xor(self, vals):
         "Bitwise XOR: x ^ y"
-
-        vals = self.pop_values(2)
-        self.stack.append(vals[1] ^ vals[0])
+        return vals[1] ^ vals[0]
 
     #--------------------------------------------
-    def not_func(self):
+    @pop_vals(1)
+    @handle_exc
+    def not_func(self, vals):
         "Bitwise NOT: ~x"
-
-        vals = self.pop_values(1)
-        # mask = 0xFFFFFFFF # int('1' * globals.BIN_MAX_BITS, base=2)
         mask = int('1' * globals.BIN_MAX_BITS, base=2)
-        self.stack.append(~int(vals[0]) & mask)
+        return(~int(vals[0]) & mask)
 
     #--------------------------------------------
-    def exponent(self):
+    @pop_vals(2)
+    @handle_exc
+    def exponent(self, vals):
         "Exponent: Computes x^y"
-
-        vals = self.pop_values(2)
-        try:
-            result = math.pow(vals[1], vals[0])
-        except Exception as exp:
-            sublime.error_message("math error: {}^{}\n{}".format(vals[1], vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.pow(vals[1], vals[0])
 
     #--------------------------------------------
-    def factorial(self):
+    @pop_vals(1)
+    @handle_exc
+    def factorial(self, vals):
         "Factorial: Find x!"
-
-        vals = self.pop_values(1)
-        try:
-            result = math.factorial(int(vals[0]))
-        except Exception as exp:
-            sublime.error_message("math error: {}!\n{}".format(vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.factorial(vals[0])
 
     #--------------------------------------------
-    def square(self):
+    @pop_vals(1)
+    @handle_exc
+    def square(self, vals):
         "Square: Compute x^2"
-
-        vals = self.pop_values(1)
-        try:
-            result = math.pow(2, vals[0])
-        except Exception as exp:
-            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.pow(vals[0], 2)
 
     #--------------------------------------------
-    def log2(self):
+    @pop_vals(1)
+    @handle_exc
+    def log2(self, vals):
         "log2: Compute log2(x)"
-
-        vals = self.pop_values(1)
-        try:
-            result = math.log(vals[0], 2)
-        except Exception as exp:
-            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.log(vals[0], 2)
 
     #--------------------------------------------
-    def logn(self):
+    @pop_vals(1)
+    @handle_exc
+    def logn(self, vals):
         "ln: Compute natural log ln(x)"
-
-        vals = self.pop_values(1)
-        try:
-            result = math.log(vals[0])
-        except Exception as exp:
-            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.log(vals[0])
 
     #--------------------------------------------
-    def root(self):
+    @pop_vals(1)
+    @handle_exc
+    def root(self, vals):
         "Square root: Compute sqrt(x)"
-
-        vals = self.pop_values(1)
-        try:
-            result = math.sqrt(vals[0])
-        except Exception as exp:
-            sublime.error_message("math error: {}\n{}".format(vals[0], exp))
-        else:
-            self.stack.append(result)
+        return math.sqrt(vals[0])
 
     #--------------------------------------------
     def undo(self):
         "Undo: Retrieves previous stack"
-
         if len(self.prev_stack) == 0:
             sublime.error_message("No previous stack available.")
             return
@@ -515,64 +502,54 @@ class RPNEvent(sublime_plugin.EventListener):
     #--------------------------------------------
     def clear_stack(self):
         "Clears the stack"
-
         self.stack = []
 
     #--------------------------------------------
-    def swap_stack(self):
+    @pop_vals(2)
+    def swap_stack(self, vals):
         "Swaps the last two values on the stack"
-
-        x, y = self.pop_values(2)
-        self.stack.extend([x, y])
+        self.stack.extend([vals[0], vals[1]])
 
     #--------------------------------------------
     def pop_last_value(self):
         "Pops the last value from the stack and discards it"
-
         self.pop_values(1)
 
     #--------------------------------------------
     def mode_basic(self):
         "Changes to the basic mode"
-
         self.mode = globals.BASIC
 
     #--------------------------------------------
     def mode_programmer(self):
         "Changes to the programmer mode"
-
         self.mode = globals.PROGRAMMER
 
     #--------------------------------------------
     def mode_scientific(self):
         "Changes to the scientific mode"
-
         self.mode = globals.SCIENTIFIC
 
     #--------------------------------------------
     def decimal(self):
         "Changes base to decimal"
-
         self.mode = self.prev_mode
         self.base = globals.DEC
 
     #--------------------------------------------
     def octal(self):
         "Changes base to octal"
-
         self.mode = self.prev_mode
         self.base = globals.OCT
 
     #--------------------------------------------
     def hexadecimal(self):
         "Changes base to hexadecimal"
-
         self.mode = self.prev_mode
         self.base = globals.HEX
 
     #--------------------------------------------
     def binary(self):
         "Changes base to binary"
-
         self.mode = self.prev_mode
         self.base = globals.BIN
