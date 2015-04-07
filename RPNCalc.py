@@ -102,6 +102,7 @@ class RPNEvent(sublime_plugin.EventListener):
             'r': self.root,
             'l': self.log2,
             'L': self.logn,
+            'I': self.inverse,
         }
 
         stats_cmds = {
@@ -570,6 +571,13 @@ class RPNEvent(sublime_plugin.EventListener):
     def root(self, vals):
         "Square root: Compute sqrt(x)"
         return math.sqrt(vals[0])
+
+    #--------------------------------------------
+    @pop_vals(1)
+    @handle_exc
+    def inverse(self, vals):
+        "Inverse: Compute 1/x"
+        return (1/vals[0])
 
     ########################################################################################
     # Statistical Commands
