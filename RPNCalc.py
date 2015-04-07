@@ -292,7 +292,11 @@ class RPNEvent(sublime_plugin.EventListener):
 
         self.that_was_me = True
         try:
-            view.run_command("print_to_rpn", {'stack': self.stack, 'mode': self.mode, 'prev_mode': self.prev_mode, 'help_str': self.help_str, 'base': self.base})
+            view.run_command("print_to_rpn", {'stack': self.stack,
+                                              'mode': self.mode,
+                                              'prev_mode': self.prev_mode,
+                                              'help_str': self.help_str,
+                                              'base': self.base})
         except Exception as exc:
             sublime.error_message("Sublime exception: {}".format(exc))
 
@@ -311,7 +315,9 @@ class RPNEvent(sublime_plugin.EventListener):
                 cmd = group[key]
                 h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
             h_txt += "\n"
-        h_txt += "\n{:^30}".format("Any key to exit.")
+        h_txt += "\n{:^30}\n\n{:30}\n{:30}\n".format("Any key to exit.",
+                                                     "Report Bugs to:",
+                                                     "https://github.com/bphunter1972/RPN/issues")
         return h_txt
 
     #--------------------------------------------
