@@ -1,3 +1,15 @@
+"""
+An RPN Calculator with Basic, Programmer, Scientific, and Statistical modes.
+
+Press ? for help
+Press : to change modes.
+"""
+
+__author__ = 'Brian Hunter'
+__email__ = 'brian.p.hunter@gmail.com'
+__version__ = '0.2'
+
+
 import sublime_plugin
 from . import rpn_globals as glb
 

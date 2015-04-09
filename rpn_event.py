@@ -1,19 +1,8 @@
-"""
-An RPN Calculator with Basic, Programmer, Scientific, and Statistical modes.
-
-Press ? for help
-Press : to change modes.
-"""
-
 import sublime
 import sublime_plugin
 import math
 from . import rpn_globals as glb
 from .rpn_decorators import *
-
-__author__ = 'Brian Hunter'
-__email__ = 'brian.p.hunter@gmail.com'
-__version__ = '0.2'
 
 ########################################################################################
 class RPNEvent(sublime_plugin.EventListener):

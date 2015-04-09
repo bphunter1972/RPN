@@ -34,6 +34,7 @@ Help
 Miscellaneous
  ☐ Separate math functions into different file?
  ☐ Add error text below mode bar instead of sublime error messages?
+ ☐ Add most recent command below mode bar?
 
 Bugs
  ✔ Fix use of 'C' to clear stack. @done (15-04-08 22:36)
