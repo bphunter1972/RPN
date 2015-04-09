@@ -17,7 +17,7 @@ Modes
 Scientific
  ☐ Add scientific functions (sin, cos, tan, etc.)
  ☐ Make precision (SCI) a setting.
- ☐ Add exponential input.
+ ✔ Add exponential input. @done (15-04-08 22:56)
  ☐ Add engineering print
 Binary
  ☐ Make BIN_MAX_BITS a setting.
