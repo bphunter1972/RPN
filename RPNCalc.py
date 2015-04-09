@@ -9,50 +9,11 @@ import sublime
 import sublime_plugin
 import math
 from . import RPNGlobals as glb
-from functools import wraps
+from .RPNDecorators import *
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
 __version__ = '0.2'
-
-########################################################################################
-# Decorators
-def pop_vals(pop_num):
-    def pop_dec(func):
-        @wraps(func)
-        def wrapper(self):
-            vals = self.pop_values(pop_num)
-            func(self, vals)
-        return wrapper
-    return pop_dec
-
-def pop_all_vals(func):
-    @wraps(func)
-    def wrapper(self):
-        vals = self.pop_all()
-        func(self, vals)
-    return wrapper
-
-def handle_exc(func):
-    @wraps(func)
-    def wrapper(self, vals):
-        try:
-            result = func(self, vals)
-        except Exception as exp:
-            sublime.error_message("math error: {}".format(exp))
-        else:
-            self.stack.append(result)
-    return wrapper
-
-def handle_exc_undo(func):
-    @wraps(func)
-    def wrapper(self, vals):
-        try:
-            self.stack.append(func(self, vals))
-        except Exception as exc:
-            sublime.error_message("math error: {}".format(exc))
-            self.undo()
-    return wrapper
 
 ########################################################################################
 class RPNEvent(sublime_plugin.EventListener):
