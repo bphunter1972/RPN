@@ -8,8 +8,8 @@ Press : to change modes.
 import sublime
 import sublime_plugin
 import math
-from . import RPNGlobals as glb
-from .RPNDecorators import *
+from . import rpn_globals as glb
+from .rpn_decorators import *
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'

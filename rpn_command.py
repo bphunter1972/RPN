@@ -1,5 +1,5 @@
 import sublime_plugin
-from . import RPNGlobals as glb
+from . import rpn_globals as glb
 
 class RpnCommand(sublime_plugin.WindowCommand):
     "Launches the rpn view"

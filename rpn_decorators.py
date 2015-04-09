@@ -39,4 +39,3 @@ def handle_exc_undo(func):
             sublime.error_message("math error: {}".format(exc))
             self.undo()
     return wrapper
-
