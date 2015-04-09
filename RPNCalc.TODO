@@ -17,6 +17,8 @@ Modes
 Scientific
  ☐ Add scientific functions (sin, cos, tan, etc.)
  ☐ Make precision (SCI) a setting.
+ ☐ Add exponential input.
+ ☐ Add engineering print
 Binary
  ☐ Make BIN_MAX_BITS a setting.
  ☐ Create a function which displays the value of a field of bits
@@ -31,5 +33,8 @@ Help
 
 Miscellaneous
  ☐ Separate math functions into different file?
- ☐ Add error text below mode bar instead of sublime error messages.
+ ☐ Add error text below mode bar instead of sublime error messages?
+
+Bugs
+ ✔ Fix use of 'C' to clear stack. @done (15-04-08 22:36)
    

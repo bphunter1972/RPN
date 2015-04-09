@@ -62,7 +62,7 @@ class PrintToRpnCommand(sublime_plugin.TextCommand):
             fmt = "{:%s}" % (base_char)
             val = int(val) if val >= 0 else self.twos_compl(int(val))
         else:
-            fmt = "{:g}"
+            fmt = "{:G}"
         val_str = fmt.format(val)
 
         # Add underscores between nibbles in these modes

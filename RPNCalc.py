@@ -13,7 +13,7 @@ from functools import wraps
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
-__version__ = '0.1'
+__version__ = '0.2'
 
 ########################################################################################
 # Decorators
@@ -66,11 +66,12 @@ class RPNEvent(sublime_plugin.EventListener):
         self.opanel = None
         self.done = False
         self.prev_stack, self.stack = [], []
+        self.additional_help = {}
 
         # Create dictionaries of commands that associate key presses with the functions they call
         fundamental_cmds = {
             'U': self.undo,
-            'C': self.clear_stack,
+            'X': self.clear_stack,
             'S': self.swap_stack,
             'x': self.pop_last_value,
             '?': self.help,
@@ -148,6 +149,9 @@ class RPNEvent(sublime_plugin.EventListener):
                                           ('Basic Commands', basic_cmds),
                                           ('Scientific Commands', scientific_cmds),
                                           )
+        self.additional_help[glb.SCIENTIFIC] = '\n'.join(("    E : Exponential Notation",
+                                                          "    e : Euler's number (2.71828)",
+                                                          "    p : pi (3.14159)")) + '\n'
 
         self.stats_commands = {}
         self.stats_commands.update(fundamental_cmds)
@@ -183,9 +187,12 @@ class RPNEvent(sublime_plugin.EventListener):
         self.edit_region_start = 0
 
     #--------------------------------------------
-    def get_legal_digits(self):
+    def get_legal_digits(self, text):
         "As as string, return all of the legal digits that can be pressed while in the given modes."
 
+        # exp_mode allows negative numbers after exponents, by using the minus symbol
+
+        exp_mode = True if len(text) >= 2 and text[-2] == 'E' else False
         return {
             glb.BASIC:      '0123456789.',
             glb.PROGRAMMER: {
@@ -194,7 +201,7 @@ class RPNEvent(sublime_plugin.EventListener):
                 glb.DEC:    '0123456789',
                 glb.HEX:    '0123456789abcdefABCDEF'
             }[self.base],
-            glb.SCIENTIFIC: '0123456789.ep',
+            glb.SCIENTIFIC: ('0123456789.epE' if not exp_mode else '0123456789.-'),
             glb.STATS:      '0123456789.',
         }[self.mode]
 
@@ -265,7 +272,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
         args = None
         current_legal_commands = self.legal_commands[self.mode]
-        if key_pressed in self.get_legal_digits():
+        if key_pressed in self.get_legal_digits(text):
             return
         elif key_pressed in current_legal_commands.keys():
             if len(text) > 1:
@@ -309,13 +316,18 @@ class RPNEvent(sublime_plugin.EventListener):
         command_groups = self.legal_command_groups[self.mode]
         for group_name, group in command_groups:
             command_keys = sorted(group.keys())
-            print(group_name, command_keys)
-            print(group[command_keys[0]].__doc__)
             h_txt += "{:<30}\n".format(group_name)
             for key in command_keys:
                 cmd = group[key]
                 h_txt += "\t{} : {}\n".format(key, cmd.__doc__)
             h_txt += "\n"
+
+        # Additional Text
+        try:
+            h_txt += self.additional_help[self.mode]
+        except KeyError:
+            pass
+
         h_txt += "\n{:^30}\n\n{:30}\n{:30}\n".format("Any key to exit.",
                                                      "Report Bugs to:",
                                                      "https://github.com/bphunter1972/RPN/issues")
@@ -422,7 +434,7 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def clear_stack(self):
-        "Clears the stack"
+        "Clear the stack"
         self.stack = []
 
     #--------------------------------------------
