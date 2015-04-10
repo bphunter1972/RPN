@@ -42,8 +42,10 @@ class RPNEvent(sublime_plugin.EventListener):
             '&': self.and_func,
             '~': self.not_func,
             '^': self.xor,
-            '<': self.shift_left,
-            '>': self.shift_right,
+            ',': self.shift_left,
+            '.': self.shift_right,
+            '<': self.shift_left_many,
+            '>': self.shift_right_many
         }
 
         scientific_cmds = {
@@ -451,14 +453,28 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def shift_left(self, vals):
         "Shift left: x << 1"
-        return vals[0]*2
+        return vals[0] << 1
 
     #--------------------------------------------
     @pop_vals(1)
     @handle_exc
     def shift_right(self, vals):
         "Shift right: x >> 1"
-        return vals[0]/2
+        return vals[0] >> 1
+
+    #--------------------------------------------
+    @pop_vals(2)
+    @handle_exc
+    def shift_left_many(self, vals):
+        "Shift left: x << y"
+        return vals[1] << vals[0]
+
+    #--------------------------------------------
+    @pop_vals(2)
+    @handle_exc
+    def shift_right_many(self, vals):
+        "Shift right: x >> y"
+        return vals[1] >> vals[0]
 
     #--------------------------------------------
     @pop_vals(2)

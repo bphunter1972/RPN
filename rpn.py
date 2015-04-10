@@ -7,7 +7,7 @@ Press : to change modes.
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
-__version__ = '0.2'
+__version__ = '0.3'
 
 
 import sublime_plugin
