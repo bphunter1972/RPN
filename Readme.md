@@ -9,6 +9,8 @@ Launch RPN with the rpn command.
 
 ## Modes
 
+![](/images/rpn.gif)
+
 ### Basic
 
 Basic mode supports simple addition, subtraction, etc., with floating point
@@ -39,16 +41,15 @@ entire stack at once.
 
 Or:
 
-* Open the Sublime Text Packages folder:
+* Clone this repository into your Sublime Text Packages folder:
 
   * OS X: ~/Library/Application Support/Sublime Text 3/Packages/
   * Windows: %APPDATA%/Sublime Text 3/Packages/
   * Linux: ~/.Sublime Text 3/Packages/ or ~/.config/sublime-text-3/Packages
 
-* Clone this repository
-
 ## Help
 
 Help is available within RPN by pressing '?'. Change modes by pressing ':'.
 
+![](/images/help.png)
 
