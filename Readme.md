@@ -9,7 +9,7 @@ Launch RPN with the rpn command.
 
 ## Modes
 
-![](/images/rpn.gif)
+![](/images/RPN.gif)
 
 ### Basic
 
