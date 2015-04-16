@@ -1,3 +1,7 @@
+"""
+Handles all RPN events.
+"""
+
 import sublime
 import sublime_plugin
 import math
@@ -42,6 +46,7 @@ class RPNEvent(sublime_plugin.EventListener):
             '&': self.and_func,
             '~': self.not_func,
             '^': self.xor,
+            '$': self.field_bits,
             ',': self.shift_left,
             '.': self.shift_right,
             '<': self.shift_left_many,
@@ -73,6 +78,8 @@ class RPNEvent(sublime_plugin.EventListener):
             'P': self.mode_programmer,
             'S': self.mode_scientific,
             's': self.mode_stats,
+            'R': self.regular_notation,
+            'E': self.engineering_notation,
             ':': self.quit_change_mode
         }
 
@@ -133,10 +140,12 @@ class RPNEvent(sublime_plugin.EventListener):
 
         # Set defaults
         self.base = glb.DEC
+        self.notation = glb.REGULAR
         self.mode, self.prev_mode = glb.PROGRAMMER, glb.PROGRAMMER
         self.help_str = None
         self.that_was_me = False
         self.edit_region_start = 0
+        self.message = glb.BASIC_HELP
 
     #--------------------------------------------
     def get_legal_digits(self, text):
@@ -239,7 +248,7 @@ class RPNEvent(sublime_plugin.EventListener):
                 return
             args = (text,)
         else:
-            sublime.error_message("Illegal digit or command {}".format(key_pressed))
+            self.message = "ERROR:  Illegal digit or command {}".format(key_pressed)
             return
 
         if args is not None:
@@ -256,9 +265,11 @@ class RPNEvent(sublime_plugin.EventListener):
                                               'mode': self.mode,
                                               'prev_mode': self.prev_mode,
                                               'help_str': self.help_str,
-                                              'base': self.base})
+                                              'base': self.base,
+                                              'notation': self.notation,
+                                              'message': self.message})
         except Exception as exc:
-            sublime.error_message("Sublime exception: {}".format(exc))
+            self.message = "ERROR:  Sublime exception: {}".format(exc)
 
     #--------------------------------------------
     def gen_help_str(self):
@@ -312,12 +323,18 @@ class RPNEvent(sublime_plugin.EventListener):
                     else:
                         last_val = float(arg)
                 except ValueError:
-                    sublime.error_message("Unable to convert {} to a number.".format(arg))
+                    self.message = "ERROR:  Unable to convert {} to a number.".format(arg)
                 else:
                     self.prev_stack.append(self.stack[:])
                     self.stack.append(last_val)
             else:
-                self.run_command(arg)
+                try:
+                    self.message = glb.BASIC_HELP
+                    self.run_command(arg)
+                except ZeroDivisionError:
+                    self.message = "ERROR:  Division by zero."
+                except:
+                    raise
 
     #--------------------------------------------
     def run_command(self, command):
@@ -326,12 +343,12 @@ class RPNEvent(sublime_plugin.EventListener):
                 self.prev_stack.append(self.stack[:])
             command()
         except glb.InsufficientStackDepth as exc:
-            sublime.error_message("Not enough values for operation:\n{} required, but only {} available.".format(exc.required, len(self.stack)))
+            self.message = "ERROR:  Not enough values for operation: {} required, but only {} available.".format(exc.required, len(self.stack))
 
     #--------------------------------------------
     def pop_values(self, count):
         if count <= 0:
-            sublime.error_message("Programmer Error, count={}".format(count))
+            self.message = "ERROR:  Programmer Error, count={}".format(count)
 
         if len(self.stack) < count:
             raise glb.InsufficientStackDepth(count)
@@ -356,20 +373,20 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def change_mode(self):
-        "Press : to change calculator modes and bases."
+        "Press colon to change calculator modes and bases."
 
         self.prev_mode = self.mode
         self.mode = glb.CHANGE_MODE
 
     #--------------------------------------------
     def quit_change_mode(self):
-        "Press : again to exit change mode."
+        "Press colon again to exit change mode."
 
         self.mode = self.prev_mode
 
     #--------------------------------------------
     def help(self):
-        "Displays this help screen."
+        "Display this help screen."
         if self.mode != glb.HELP:
             self.prev_mode = self.mode
             self.help_str = self.gen_help_str()
@@ -379,7 +396,7 @@ class RPNEvent(sublime_plugin.EventListener):
     def undo(self):
         "Undo: Retrieves previous stack"
         if len(self.prev_stack) == 0:
-            sublime.error_message("No previous stack available.")
+            self.message = "ERROR:  No previous stack available."
             return
 
         self.stack = self.prev_stack.pop()
@@ -392,12 +409,12 @@ class RPNEvent(sublime_plugin.EventListener):
     #--------------------------------------------
     @pop_vals(2)
     def swap_stack(self, vals):
-        "Swaps the last two values on the stack"
+        "Swap the last two values on the stack"
         self.stack.extend([vals[0], vals[1]])
 
     #--------------------------------------------
     def pop_last_value(self):
-        "Pops the last value from the stack and discards it"
+        "Pop the last value from the stack and discards it"
         self.pop_values(1)
 
     ########################################################################################
@@ -407,35 +424,35 @@ class RPNEvent(sublime_plugin.EventListener):
     @pop_vals(2)
     @handle_exc
     def add(self, vals):
-        "Adds x+y"
+        "Add x+y"
         return vals[0]+vals[1]
 
     #--------------------------------------------
     @pop_vals(2)
     @handle_exc
     def subtract(self, vals):
-        "Subtracts x-y"
+        "Subtract x-y"
         return vals[1]-vals[0]
 
     #--------------------------------------------
     @pop_vals(2)
     @handle_exc
     def multiply(self, vals):
-        "Multiplies x*y"
+        "Multiply x*y"
         return vals[1]*vals[0]
 
     #--------------------------------------------
     @pop_vals(2)
     @handle_exc_undo
     def divide(self, vals):
-        "Divides x/y"
+        "Divide x/y"
         return vals[1]/vals[0]
 
     #--------------------------------------------
     @pop_vals(2)
     @handle_exc_undo
     def modulo(self, vals):
-        "Calculates the remainder of x/y"
+        "Calculate the remainder of x/y"
         return vals[1] % vals[0]
 
     #--------------------------------------------
@@ -449,10 +466,29 @@ class RPNEvent(sublime_plugin.EventListener):
     # Programmer Commands
 
     #--------------------------------------------
+    @pop_vals(3)
+    @handle_exc_undo
+    def field_bits(self, vals):
+        "Display field of bits: x[y:z]"
+        self.message = "x[y:z]"
+
+        if vals[0] > vals[1]:
+            self.message = "Values must be MSB first, LSB second: x[y:z]"
+
+        diff = vals[1] - vals[0]
+        mask = 1
+        for n in range(diff):
+            mask <<= 1
+            mask |= 1
+
+        return (vals[2] >> vals[0]) & mask
+
+    #--------------------------------------------
     @pop_vals(1)
     @handle_exc
     def shift_left(self, vals):
         "Shift left: x << 1"
+        self.message = "x << 1"
         return vals[0] << 1
 
     #--------------------------------------------
@@ -460,6 +496,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def shift_right(self, vals):
         "Shift right: x >> 1"
+        self.message = "x >> 1"
         return vals[0] >> 1
 
     #--------------------------------------------
@@ -467,6 +504,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def shift_left_many(self, vals):
         "Shift left: x << y"
+        self.message = "x << y"
         return vals[1] << vals[0]
 
     #--------------------------------------------
@@ -474,6 +512,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def shift_right_many(self, vals):
         "Shift right: x >> y"
+        self.message = "x >> y"
         return vals[1] >> vals[0]
 
     #--------------------------------------------
@@ -481,6 +520,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def or_func(self, vals):
         "Bitwise OR: x | y"
+        self.message = "x | y"
         return vals[1] | vals[0]
 
     #--------------------------------------------
@@ -488,6 +528,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def and_func(self, vals):
         "Bitwise AND: x & y"
+        self.message = "x & y"
         return vals[1] & vals[0]
 
     #--------------------------------------------
@@ -495,6 +536,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def xor(self, vals):
         "Bitwise XOR: x ^ y"
+        self.message = "x ^ y"
         return vals[1] ^ vals[0]
 
     #--------------------------------------------
@@ -502,6 +544,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def not_func(self, vals):
         "Bitwise NOT: ~x"
+        self.message = "~x"
         mask = int('1' * glb.BIN_MAX_BITS, base=2)
         return(~int(vals[0]) & mask)
 
@@ -513,6 +556,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def exponent(self, vals):
         "Exponent: Computes x^y"
+        self.message = "x^y"
         return math.pow(vals[1], vals[0])
 
     #--------------------------------------------
@@ -520,6 +564,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def factorial(self, vals):
         "Factorial: Find x!"
+        self.message = "x!"
         return math.factorial(vals[0])
 
     #--------------------------------------------
@@ -527,6 +572,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def square(self, vals):
         "Square: Compute x^2"
+        self.message = "x^2"
         return math.pow(vals[0], 2)
 
     #--------------------------------------------
@@ -534,6 +580,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def log2(self, vals):
         "log2: Compute log2(x)"
+        self.message = "log2(x)"
         return math.log(vals[0], 2)
 
     #--------------------------------------------
@@ -541,6 +588,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def logn(self, vals):
         "ln: Compute natural log ln(x)"
+        self.message = "ln(x)"
         return math.log(vals[0])
 
     #--------------------------------------------
@@ -548,6 +596,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def root(self, vals):
         "Square root: Compute sqrt(x)"
+        self.message = "sqrt(x)"
         return math.sqrt(vals[0])
 
     #--------------------------------------------
@@ -555,6 +604,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def inverse(self, vals):
         "Inverse: Compute 1/x"
+        self.message = "1/x"
         return (1/vals[0])
 
     ########################################################################################
@@ -565,6 +615,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def sum(self, vals):
         "Sum: Returns the sum of all values in the stack."
+        self.message = "SUM"
         return sum(vals)
 
     #--------------------------------------------
@@ -572,6 +623,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def avg(self, vals):
         "Average/Mean: Returns the mean of all values in the stack."
+        self.message = "AVG"
         return sum(vals)/len(vals)
 
     #--------------------------------------------
@@ -579,6 +631,7 @@ class RPNEvent(sublime_plugin.EventListener):
     @handle_exc
     def median(self, vals):
         "Median: Returns the median of all values in the stack."
+        self.message = "MEDIAN"
         vals = sorted(vals)
         midpoint = int((len(vals)+1)/2)
         if len(vals) % 2 == 0:
@@ -592,44 +645,56 @@ class RPNEvent(sublime_plugin.EventListener):
 
     #--------------------------------------------
     def mode_basic(self):
-        "Changes to the basic mode"
+        "Change to basic mode"
         self.mode = glb.BASIC
 
     #--------------------------------------------
     def mode_programmer(self):
-        "Changes to the programmer mode"
+        "Change to programmer mode"
         self.mode = glb.PROGRAMMER
 
     #--------------------------------------------
     def mode_scientific(self):
-        "Changes to the scientific mode"
+        "Change to scientific mode"
         self.mode = glb.SCIENTIFIC
 
     #--------------------------------------------
     def mode_stats(self):
-        "Changes to the statistical mode"
+        "Change to statistical mode"
         self.mode = glb.STATS
 
     #--------------------------------------------
     def decimal(self):
-        "Changes base to decimal"
+        "Set base to decimal"
         self.mode = self.prev_mode
         self.base = glb.DEC
 
     #--------------------------------------------
     def octal(self):
-        "Changes base to octal"
+        "Set base to octal"
         self.mode = self.prev_mode
         self.base = glb.OCT
 
     #--------------------------------------------
     def hexadecimal(self):
-        "Changes base to hexadecimal"
+        "Set base to hexadecimal"
         self.mode = self.prev_mode
         self.base = glb.HEX
 
     #--------------------------------------------
     def binary(self):
-        "Changes base to binary"
+        "Set base to binary"
         self.mode = self.prev_mode
         self.base = glb.BIN
+
+    #--------------------------------------------
+    def regular_notation(self):
+        "Set to regular scientific notation."
+        self.mode = self.prev_mode
+        self.notation = glb.REGULAR
+
+        #--------------------------------------------
+    def engineering_notation(self):
+        "Set to engineering scientific notation."
+        self.mode = self.prev_mode
+        self.notation = glb.ENGINEERING

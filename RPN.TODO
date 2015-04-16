@@ -6,7 +6,7 @@ Interface
  ✔ Negative numbers @done (15-04-05 11:21)
  ☐ To launch command, add optional starting modes
 Stack
- ☐ Command to use previous values in the stack
+ ✘ Command to use previous values in the stack @cancelled (15-04-16 14:32)
  ✔ Flip last two values in the stack @done (15-03-30 16:34)
  ✔ Delete last value in the stack @done (15-04-04 21:46)
 Modes
@@ -18,10 +18,10 @@ Scientific
  ☐ Add scientific functions (sin, cos, tan, etc.)
  ☐ Make precision (SCI) a setting.
  ✔ Add exponential input. @done (15-04-08 22:56)
- ☐ Add engineering print
+ ✔ Add engineering notation. @done (15-04-18 20:47)
 Binary
  ☐ Make BIN_MAX_BITS a setting.
- ☐ Create a function which displays the value of a field of bits
+ ✔ Create a function which displays the value of a field of bits @done (15-04-21 16:29)
 Programmer
  ✔ Negative numbers @done (15-04-05 11:21)
 Statistical Mode
@@ -32,9 +32,9 @@ Help
  ✘ Columnize @cancelled (15-04-04 22:10)
 
 Miscellaneous
- ☐ Separate math functions into different file?
- ☐ Add error text below mode bar instead of sublime error messages?
- ☐ Add most recent command below mode bar?
+ ✘ Separate math functions into different file? @cancelled (15-04-21 17:32)
+ ✔ Add error text below mode bar instead of sublime error messages? @done (15-04-16 14:31)
+ ✔ Add most recent command below mode bar? @done (15-04-16 14:31)
 
 Bugs
  ✔ Fix use of 'C' to clear stack. @done (15-04-08 22:36)

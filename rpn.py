@@ -2,12 +2,12 @@
 An RPN Calculator with Basic, Programmer, Scientific, and Statistical modes.
 
 Press ? for help
-Press : to change modes.
+Press : to change modes, bases, or notations.
 """
 
 __author__ = 'Brian Hunter'
 __email__ = 'brian.p.hunter@gmail.com'
-__version__ = '0.3'
+__version__ = '0.4.0'
 
 
 import sublime_plugin

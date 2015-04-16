@@ -1,0 +1,11 @@
+RPN
+===
+
+RPN is a Reverse Polish Notation Calculator with Basic, Programmer,
+Scientific, and Statistical modes.
+
+Launch RPN with the rpn command or Ctrl+Command+C (Ctrl+Alt+C in Windows or
+Linux).
+
+Press ? for help.
+Press : to change modes, bases, or notations.

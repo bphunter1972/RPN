@@ -1,0 +1,9 @@
+RPN 0.4.0 Changelog
+
+New Features
+
+  * Shows informational and error messages below the mode bar
+  * Scientific mode:
+    * Add engineering/scientific (regular) notation
+  * Programmer mode:
+    * Add command to display bit fields

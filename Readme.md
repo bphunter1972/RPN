@@ -5,11 +5,13 @@
 RPN is a reverse-polish notation calculator featuring basic, programmer,
 scientific, and statistics modes.
 
-Launch RPN with the rpn command.
+Launch RPN with the rpn command or Ctrl+Command+C (Ctrl+Alt+C in Windows or Linux).
+
+![](/images/RPN.gif)
 
 ## Modes
 
-![](/images/RPN.gif)
+Press ':' to change modes, bases, and scientific notation.
 
 ### Basic
 
@@ -18,7 +20,7 @@ numbers.
 
 ### Programmer
 
-Programmer mode supports 4 different bases: hexadecimal, decimal, octal, and
+Programmer mode supports 4 different bases:  hexadecimal, decimal, octal, and
 binary. It also supports commands such as shifting, inversion, AND, OR, and XOR.
 
 Due to Sublime Text 3 limitations, the maximum sized value in programmer mode
@@ -28,7 +30,10 @@ for this constant will cause some issues within Sublime.
 ### Scientific
 
 Scientific mode operates with floating point numbers and supports commands
-such as exponent, factorial, square, root, log2, and logn.
+such as exponent, factorial, square, square root, log2, etc. 
+
+Scientific notation is supported in regular or Engineering notation. You can
+alter the notation from the Modes
 
 ### Statistics
 

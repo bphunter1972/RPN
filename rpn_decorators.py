@@ -1,8 +1,14 @@
+"""
+Decorators used by computational functions.
+"""
+
 from functools import wraps
 import sublime
 
 ########################################################################################
 # Decorators
+
+#--------------------------------------------
 def pop_vals(pop_num):
     def pop_dec(func):
         @wraps(func)
@@ -12,6 +18,7 @@ def pop_vals(pop_num):
         return wrapper
     return pop_dec
 
+#--------------------------------------------
 def pop_all_vals(func):
     @wraps(func)
     def wrapper(self):
@@ -19,6 +26,7 @@ def pop_all_vals(func):
         func(self, vals)
     return wrapper
 
+#--------------------------------------------
 def handle_exc(func):
     @wraps(func)
     def wrapper(self, vals):
@@ -30,6 +38,7 @@ def handle_exc(func):
             self.stack.append(result)
     return wrapper
 
+#--------------------------------------------
 def handle_exc_undo(func):
     @wraps(func)
     def wrapper(self, vals):
